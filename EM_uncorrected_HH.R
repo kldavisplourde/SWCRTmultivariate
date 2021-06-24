@@ -1,15 +1,7 @@
 #setwd("C:/Users/lifan/Dropbox/CRT_Coprimary/Data/")
 #data=read.csv("short2.csv",header=TRUE)
 
-#data=short
 #library(nlme)
-#lme1<-lme(out1~factor(time)+arm,random=~1|cluster,data=short)
-#lme2<-lme(out2~factor(time)+arm,random=~1|cluster,data=short)
-#formula1=formula(lme1)
-#formula2=formula(lme2)
-#EM.estim(short,formula1,formula2)
-
-library(nlme)
 library(mvtnorm)
 library(numDeriv)
 
@@ -29,8 +21,8 @@ EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
   if (length(as.numeric(fm1$coefficients$fixed)) != length(as.numeric(fm2$coefficients$fixed)))
     stop("\nnumber of covariates do not match between endpoints.")
   nvar<-length(as.numeric(fm1$coefficients$fixed))
-  TermsX1 <- lme1$terms
-  TermsX2 <- lme2$terms
+  TermsX1 <- fm1$terms
+  TermsX2 <- fm2$terms
   mfX1 <- model.frame(TermsX1, data = data)[,-1]
   mfX2 <- model.frame(TermsX2, data = data)[,-1]
   if (identical(mfX1,mfX2) == FALSE)
@@ -38,7 +30,8 @@ EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
   ##
   
   # vector of cluster sizes
-  m <- as.numeric(table(data$cluster))
+  #m <- as.numeric(table(data$cluster))
+  m <- as.numeric(table(fm1$groups[[1]]))
   
   s2phi1 <- VarCorr(fm1)[1,1]
   s2phi2 <- VarCorr(fm2)[1,1]
@@ -52,7 +45,8 @@ EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
   
   #Y <- as.matrix(data[,c("out1","out2")])
   Y <- as.matrix(cbind(model.frame(TermsX1, data = dt)[,1],model.frame(TermsX2, data = dt)[,1]))
-  ID <- as.numeric(data$cluster)
+  #ID <- as.numeric(data$cluster)
+  ID <- fm1$groups[[1]]
   n <- length(unique(ID))
   X <- as.matrix(cbind(1, mfX1)) # design matrix
   
