@@ -14,21 +14,27 @@ library(mvtnorm)
 library(numDeriv)
 
 # function to perform EM estimation with K=2 outcomes
-EM.estim <- function(data, formula1,formula2, maxiter=500,epsilon=1e-4
+EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
                      , verbose=FALSE){
   # fit mixed model to initialize parameters
-  fm1 <- lme(formula1, random = ~ 1|cluster, data=data,control=lmeControl(returnObject=TRUE))
-  fm2 <- lme(formula2, random = ~ 1|cluster, data=data,control=lmeControl(returnObject=TRUE))
+  #fm1 <- lme(formula1, random = ~ 1|cluster, data=data,control=lmeControl(returnObject=TRUE))
+  #fm2 <- lme(formula2, random = ~ 1|cluster, data=data,control=lmeControl(returnObject=TRUE))
   K <- 2
   zeta <- as.numeric(c(fm1$coefficients$fixed, fm2$coefficients$fixed))
   ## KP: We now have a time effect to take into account which depends on the number of periods.
   #beta1 = zeta[1:2] 
   #beta2 = zeta[3:4]
-  beta1 = as.numeric(fm1$coefficients$fixed) 
+  beta1 = as.numeric(fm1$coefficients$fixed)
   beta2 = as.numeric(fm2$coefficients$fixed)
   if (length(as.numeric(fm1$coefficients$fixed)) != length(as.numeric(fm2$coefficients$fixed)))
     stop("\nnumber of covariates do not match between endpoints.")
   nvar<-length(as.numeric(fm1$coefficients$fixed))
+  TermsX1 <- lme1$terms
+  TermsX2 <- lme2$terms
+  mfX1 <- model.frame(TermsX1, data = data)[,-1]
+  mfX2 <- model.frame(TermsX2, data = data)[,-1]
+  if (identical(mfX1,mfX2) == FALSE)
+    stop("\ncovariates do not match between endpoints.")
   ##
   
   # vector of cluster sizes
@@ -44,13 +50,11 @@ EM.estim <- function(data, formula1,formula2, maxiter=500,epsilon=1e-4
   SigmaE <- diag(c(s2e1, s2e2))
   InvS2E <- solve(SigmaE)
   
-  Y <- as.matrix(data[,c("out1","out2")])
+  #Y <- as.matrix(data[,c("out1","out2")])
+  Y <- as.matrix(cbind(model.frame(TermsX1, data = dt)[,1],model.frame(TermsX2, data = dt)[,1]))
   ID <- as.numeric(data$cluster)
   n <- length(unique(ID))
-  nperiods<-max(data$time)+1                                                  #KP: need to make time variables more dynamic - maybe add as specification in model?
-  time<-data$time.1
-  for(i in 2:(nperiods-1)){time<-cbind(time,data[, paste0("time.", i)])}      #KP: This also needs to be reworked for general use.
-  X <- as.matrix(cbind(1, matrix(time,ncol=(nperiods-1)), data[,"arm"])) # design matrix
+  X <- as.matrix(cbind(1, mfX1)) # design matrix
   
   ESSphi1 <- matrix(0,n,K)
   ESSphi2 <- array(0,c(K,K,n))
