@@ -3,14 +3,15 @@
 ###############################################
 ### function for generating the SW-CRT data ###
 ###############################################
-#n=15; m=5; K=2; cv=0; sigmac=matrix(c(1,0.01,0.01,1),K); sigmae= matrix(c(1,0.01,0.01,1),K); eff=c(1,0.5); time.eff=c(1.1,1.3,1.4,0.9,0.7,0.5)
-datagen_cont <- function(n, m, K, cv, sigmac, sigmae, eff, time.eff ){
+#n=15; m=5; K=2; cv=0; sigmac=matrix(c(1,0.01,0.01,1),K); sigmacp=matrix(c(1,0.01,0.01,1),K); sigmae= matrix(c(1,0.01,0.01,1),K); eff=c(1,0.5); time.eff=c(1.1,1.3,1.4,0.9,0.7,0.5)
+datagen_cont <- function(n, m, K, cv, sigmac, sigmacp, sigmae, eff, time.eff ){
   
   # n -number of clusters
   # m - cluster size
   # K - number of multiple co-primary outcomes
   # cv - cluster size coefficient of variation
   # sigmac - correlation matrix of random cluster effects
+  # sigmacp - correlation matrix of random cluster-period effects
   # sigmae - correlation matrix of random errors
   # eff - a vector of treatment effect sizes 
   # time.eff - vector of time effects (order is by primary outcome and period)
@@ -77,24 +78,22 @@ datagen_cont <- function(n, m, K, cv, sigmac, sigmae, eff, time.eff ){
   #cluster random effect
   g <- mvrnorm(n, mu = mu, Sigma = sigmac )
   #replicate row
-  #gamma <- g[rep(1:nrow(g),  mj), ]
   gamma <- g[rep(1:nrow(g),  mj*nperiods), ]
-  
-  #intercept
-  #int <- c(5, 0)
-  #tht <-matrix(temp2$arm) %*% matrix(eff,nrow=1) +gamma+epsilon
-  # with positive interaction  
+
+  #cluster-period random effect
+  gp <- mvrnorm(n*nperiods, mu = mu, Sigma = sigmacp )
+  #replicate row
+  mjp <- rep(mj, each=nperiods)                             # KP: Assuming cluster size does not change over time.
+  gammap <- gp[rep(1:nrow(gp),  mjp), ]
   
   # time effects
   time.effect<-rep(0,K)
   for(i in 1:(nperiods-1)){
     time.effect<-time.effect+matrix(temp2[, paste0("time.", i)]) %*% matrix(time.eff[c(i,(i+nperiods-1))],nrow=1) 
   }
-  Y <- time.effect + matrix(temp2$arm) %*% matrix(eff,nrow=1) +gamma+epsilon
+  Y <- time.effect + matrix(temp2$arm) %*% matrix(eff,nrow=1) +gamma+gammap+epsilon
   colnames(Y) <- paste("out",seq(1,K),sep="")
   Yc <- as.vector(t(Y))
-  #Idct<- diag(1,K)
-  #H= Idct[rep(1:nrow(Idct), time = nrow(Y)), ]
   label = rep(1:K,n)
   # design matrix
   full <- cbind(DATA, Yc, label)
