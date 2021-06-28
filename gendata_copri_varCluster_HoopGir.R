@@ -36,13 +36,16 @@ datagen_cont <- function(n, m, K, cv, sigmac, sigmacp, sigmae, eff, time.eff ){
   #total sample size
   #n=sum(mj)
   n.sub=sum(mj)*nperiods                               # KP: Assuming cluster size does not change over time. n = I*N*T in notes
+  # number of cluster-periods
+  mjp <- rep(mj, each=nperiods)                        # KP: Assuming cluster size does not change over time.
   #cluster <- rep(1:(2*Narm),  mj);
-  cluster <- rep(1:n,  mj*nperiods);
+  cluster <- rep(1:n,  mj*nperiods)
+  cluster.period <- rep(1:(n*nperiods),  mjp)
   
   
   #generate patient id
   patid <- seq(1:n)
-  temp <- cbind(patid, cluster)
+  temp <- cbind(patid, cluster, cluster.period)
   temp <- as.data.frame(temp)
   
   #randomize treatment assignment
@@ -83,7 +86,6 @@ datagen_cont <- function(n, m, K, cv, sigmac, sigmacp, sigmae, eff, time.eff ){
   #cluster-period random effect
   gp <- mvrnorm(n*nperiods, mu = mu, Sigma = sigmacp )
   #replicate row
-  mjp <- rep(mj, each=nperiods)                             # KP: Assuming cluster size does not change over time.
   gammap <- gp[rep(1:nrow(gp),  mjp), ]
   
   # time effects
