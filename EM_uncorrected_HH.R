@@ -44,7 +44,7 @@ EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
   InvS2E <- solve(SigmaE)
   
   #Y <- as.matrix(data[,c("out1","out2")])
-  Y <- as.matrix(cbind(model.frame(TermsX1, data = dt)[,1],model.frame(TermsX2, data = dt)[,1]))
+  Y <- as.matrix(cbind(model.frame(TermsX1, data = data)[,1],model.frame(TermsX2, data = data)[,1]))
   #ID <- as.numeric(data$cluster)
   ID <- fm1$groups[[1]]
   n <- length(unique(ID))
