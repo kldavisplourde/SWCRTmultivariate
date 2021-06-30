@@ -53,7 +53,7 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
   ID.period <- data[, paste(cluster.period)]
   n <- length(unique(ID))
   np <- length(unique(data[, paste(cluster.period)]))
-  nperiods <- np/n
+  nperiods <- table(unique(cbind(data[, paste(cluster)],data[, paste(cluster.period)]))[,1])
   cID.period <- unique(cbind(data[, paste(cluster)],data[, paste(cluster.period)]))[,1]
   X <- as.matrix(cbind(1, mfX1)) # design matrix
   
@@ -94,17 +94,17 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
     
     temp <- 0
     for(j in 1:n){
-      N <- m[j]/nperiods
+      N <- m[j]/nperiods[j]
       Yj <- Y[ID == j,,drop=FALSE]
       Xj <- X[ID == j,,drop=FALSE]
       residj <- Yj - cbind(Xj%*%beta1, Xj%*%beta2)
       obs = c(t(residj))
-      tm1 <- nperiods*(N-1)*log(det(SigmaE))+(nperiods-1)*log(det(SigmaE+N*SigmaPsi))+log(det(SigmaE+N*(SigmaPsi+nperiods*SigmaPhi)))
+      tm1 <- nperiods[j]*(N-1)*log(det(SigmaE))+(nperiods[j]-1)*log(det(SigmaE+N*SigmaPsi))+log(det(SigmaE+N*(SigmaPsi+nperiods[j]*SigmaPhi)))
       InvSS2 <- solve(SigmaE+N*SigmaPsi)-InvS2E
-      InvSS22 <- solve(SigmaE+N*(SigmaPsi+nperiods*SigmaPhi))-solve(SigmaE+N*SigmaPsi)
-      Invj <- kronecker(diag(nrow=nperiods),kronecker(diag(nrow=N),InvS2E) + 
+      InvSS22 <- solve(SigmaE+N*(SigmaPsi+nperiods[j]*SigmaPhi))-solve(SigmaE+N*SigmaPsi)
+      Invj <- kronecker(diag(nrow=nperiods[j]),kronecker(diag(nrow=N),InvS2E) + 
         kronecker(matrix(1,N,N),InvSS2)/N) +
-        kronecker(matrix(1,nperiods,nperiods),kronecker(matrix(1,N,N),InvSS22)/(nperiods*N))
+        kronecker(matrix(1,nperiods[j],nperiods[j]),kronecker(matrix(1,N,N),InvSS22)/(nperiods[j]*N))
       tm2 <- c(t(obs) %*% Invj %*% obs)
       temp <- temp-(tm1+tm2)/2
     }
@@ -164,8 +164,8 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
     rss <- crossprod(re) + rowSums(sweep(ESSphi2,3,m,FUN="*"),dims=2) + rowSums(sweep(ESSpsi2,3,mp,FUN="*"),dims=2) -
       crossprod(ESSphi1,rowsum(re,ID)) - crossprod(rowsum(re,ID),ESSphi1) -
       crossprod(ESSpsi1,rowsum(re,ID.period)) - crossprod(rowsum(re,ID.period),ESSpsi1) +
-      crossprod(sweep(ESSphi1, 1, m, FUN="*"),rowsum(sweep(ESSpsi1, 1, mp, FUN="*"),cID.period)) +
-      crossprod(rowsum(sweep(ESSpsi1, 1, mp, FUN="*"),cID.period),sweep(ESSphi1, 1, m, FUN="*"))
+      crossprod(ESSphi1,rowsum(sweep(ESSpsi1, 1, mp, FUN="*"),cID.period)) +
+      crossprod(rowsum(sweep(ESSpsi1, 1, mp, FUN="*"),cID.period),ESSphi1)
     SigmaE <- rss/sum(m)
     # SigmaE <- diag(diag(SigmaE))
     InvS2E <- solve(SigmaE)
@@ -177,7 +177,8 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
     LLold <- LLnew
     converge = (abs(delta)<=epsilon)
     niter <- niter + 1
-    if(verbose) cat(paste('iter=',niter),'\t',paste('param.error=',epsilon),'\t',paste('loglik=',LLnew),'\n');  
+    #if(verbose) cat(paste('iter=',niter),'\t',paste('param.error=',epsilon),'\t',paste('loglik=',LLnew),'\n');
+    if(verbose) cat(paste('iter=',niter),'\t',paste('param.error=',epsilon),'\t',paste('loglik=',LLnew),'\t',paste('SigmaE=',c(SigmaE[!lower.tri(SigmaE)])),'\n')
     
     #print(niter)
     #print(zeta)
