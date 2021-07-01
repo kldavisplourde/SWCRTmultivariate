@@ -63,6 +63,12 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
   ESSpsi1 <- matrix(0,np,K)
   ESSpsi2 <- array(0,c(K,K,np))
   
+  phipsi2 <- array(0,c(K,K,np))
+  ESSphi2vpsi <- array(0,c(K,K,n))
+  Vjpsi <- array(0,c(K,K,np))
+  ESSsumpsi2 <- array(0,c(K,K,n))
+  ESSpsi1n2 <- matrix(0,np,K)
+  
   
   #maxiter=500
   #epsilon=1e-4
@@ -118,17 +124,6 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
   while((niter <= maxiter) & (abs(delta) > epsilon)){
     
     # Expectation step
-    for(j in 1:n){
-      Yj <- Y[ID == j,,drop=FALSE]
-      Xj <- X[ID == j,,drop=FALSE]
-      residj <- Yj - cbind(Xj%*%beta1, Xj%*%beta2)
-      Vj <- solve(InvS2Phi + m[j]*InvS2E)
-      Muj <- as.numeric(Vj %*% InvS2E %*% colSums(residj))
-      Nujj <- Vj + tcrossprod(Muj)
-      ESSphi1[j,] <- Muj
-      ESSphi2[,,j] <- Nujj
-    }
-    
     for(j in 1:np){
       Yj <- Y[ID.period == j,,drop=FALSE]
       Xj <- X[ID.period == j,,drop=FALSE]
@@ -138,6 +133,29 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
       Nujj <- Vj + tcrossprod(Muj)
       ESSpsi1[j,] <- Muj
       ESSpsi2[,,j] <- Nujj
+      
+      ESSpsi1n2[j,] <- (mp[j]*mp[j])*Muj
+      Vjpsi[,,j] <- (mp[j]*mp[j])*Vj
+      phipsi2[,,j] <- (mp[j]*mp[j])*(Vj %*% InvS2E)
+    }
+    
+    for(j in 1:n){
+      Yj <- Y[ID == j,,drop=FALSE]
+      Xj <- X[ID == j,,drop=FALSE]
+      residj <- Yj - cbind(Xj%*%beta1, Xj%*%beta2)
+      Vj <- solve(InvS2Phi + m[j]*InvS2E)
+      Muj <- as.numeric(Vj %*% InvS2E %*% colSums(residj))
+      Nujj <- Vj + tcrossprod(Muj)
+      ESSphi1[j,] <- Muj
+      ESSphi2[,,j] <- Nujj
+      
+      ind.f <- min(which(cID.period == j))
+      ind.l <- max(which(cID.period == j))
+      phipsi2j <- phipsi2[,,ind.f:ind.l]
+      ESSphi2vpsi[,,j] <- Nujj%*%rowSums(phipsi2j,dims=2)
+      
+      Vpsij <- Vjpsi[,,ind.f:ind.l]
+      ESSsumpsi2[,,j] <- (Vj %*% InvS2E)%*%(rowSums(Vpsij,dims=2) + tcrossprod(colSums(ESSpsi1n2[ind.f:ind.l,])))
     }
     
     # Maximization step - phi & psi
@@ -164,10 +182,9 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
     rss <- crossprod(re) + rowSums(sweep(ESSphi2,3,m,FUN="*"),dims=2) + rowSums(sweep(ESSpsi2,3,mp,FUN="*"),dims=2) -
       crossprod(ESSphi1,rowsum(re,ID)) - crossprod(rowsum(re,ID),ESSphi1) -
       crossprod(ESSpsi1,rowsum(re,ID.period)) - crossprod(rowsum(re,ID.period),ESSpsi1) +
-      crossprod(ESSphi1,rowsum(sweep(ESSpsi1, 1, mp, FUN="*"),cID.period)) +
-      crossprod(rowsum(sweep(ESSpsi1, 1, mp, FUN="*"),cID.period),ESSphi1)
+      crossprod(ESSphi1,rowsum(sweep(ESSpsi1,1,mp,FUN="*"),cID.period)) + crossprod(rowsum(sweep(ESSpsi1,1,mp,FUN="*"),cID.period),ESSphi1) +
+      rowSums(ESSphi2vpsi,dims=2) +rowSums(ESSsumpsi2,dims=2)
     SigmaE <- rss/sum(m)
-    # SigmaE <- diag(diag(SigmaE))
     InvS2E <- solve(SigmaE)
     
     # whether the algorithm converges
