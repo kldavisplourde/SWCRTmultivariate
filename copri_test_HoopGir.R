@@ -4,7 +4,7 @@ library(foreach)
 #set.seed(3628) #1000 iterations
 set.seed(5792) #10000 iterations
 
-simData <- foreach(i=1:2, .combine=rbind) %do% {
+simData <- foreach(i=1:1000, .combine=rbind) %do% {
   dt<-datagen_cont(n=15, m=20, K=2, cv=0, sigmac=matrix(c(1,0.12,0.12,1),2), sigmacp=matrix(c(1,0.18,0.18,1),2), sigmae= matrix(c(2.3,0.1,0.1,2.5),2), eff=c(1.2,0.5), time.eff=c(1.1,1.3,1.4,0.9,0.7,0.5))$short
 
   lme1<-lmer(out1~time.1+time.2+time.3+arm +(1|cluster) +(1|cluster.period),data=dt)
@@ -13,7 +13,7 @@ simData <- foreach(i=1:2, .combine=rbind) %do% {
   #formula1=formula(lme1)
   #formula2=formula(lme2)
 
-  fitEM<-EM.estim(dt,lme1,lme2,cluster="cluster",cluster.period="cluster.period",verbose=TRUE)
+  fitEM<-EM.estim(dt,lme1,lme2,cluster="cluster",cluster.period="cluster.period")
 
   betas<-fitEM$theta$zeta
   SigmaE<-c(fitEM$theta$SigmaE[!lower.tri(fitEM$theta$SigmaE)])
