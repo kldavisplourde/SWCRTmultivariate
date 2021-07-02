@@ -155,7 +155,7 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
       ESSphi2vpsi[,,j] <- Nujj%*%rowSums(phipsi2j,dims=2)
       
       Vpsij <- Vjpsi[,,ind.f:ind.l]
-      ESSsumpsi2[,,j] <- (Vj %*% InvS2E)%*%(rowSums(Vpsij,dims=2) + tcrossprod(colSums(ESSpsi1n2[ind.f:ind.l,])))
+      ESSsumpsi2[,,j] <- (rowSums(Vpsij,dims=2) + tcrossprod(colSums(ESSpsi1n2[ind.f:ind.l,])))%*%(Vj %*% InvS2E)
     }
     
     # Maximization step - phi & psi
