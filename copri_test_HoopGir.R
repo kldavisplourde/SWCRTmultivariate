@@ -13,7 +13,7 @@ simData <- foreach(i=1:1000, .combine=rbind) %do% {
   #formula1=formula(lme1)
   #formula2=formula(lme2)
 
-  fitEM<-EM.estim(dt,lme1,lme2,cluster="cluster",cluster.period="cluster.period")
+  fitEM<-EM.estim(dt,lme1,lme2,cluster="cluster",cluster.period="cluster.period",verbose=TRUE)
 
   betas<-fitEM$theta$zeta
   SigmaE<-c(fitEM$theta$SigmaE[!lower.tri(fitEM$theta$SigmaE)])
