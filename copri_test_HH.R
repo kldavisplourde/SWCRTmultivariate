@@ -58,8 +58,10 @@ simData <- foreach(i=1:1000, .combine=rbind) %do% {
   SigmaPhi<-c(fitEM$theta$SigmaPhi[!lower.tri(fitEM$theta$SigmaPhi)])
   iter<-fitEM$iter
   SEtheta<-fitEM$SEtheta
+  covDelta12<-fitEM$Vtheta[t+1,2*(t+1)]
+  covDelta21<-fitEM$Vtheta[2*(t+1),t+1]
   
-  c(betas,SigmaPhi,SigmaE,SEtheta)
+  c(betas,SigmaPhi,SigmaE,SEtheta,covDelta12,covDelta21)
 }
 
 if(t==3){
@@ -68,7 +70,8 @@ if(t==3){
                        "SigmaPhi11","SigmaPhi12","SigmaPhi22","SigmaE11","SigmaE12","SigmaE22",
                        "Intercept.se1","Period2.se1","Period3.se1","Treatment.se1",
                        "Intercept.se2","Period2.se2","Period3.se2","Treatment.se2",
-                       "SigmaPhi11.se","SigmaPhi12.se","SigmaPhi22.se","SigmaE11.se","SigmaE12.se","SigmaE22.se")
+                       "SigmaPhi11.se","SigmaPhi12.se","SigmaPhi22.se","SigmaE11.se","SigmaE12.se","SigmaE22.se",
+                       "CovDelta12","CovDelta21")
 }
 
 if(t==4){
@@ -77,7 +80,8 @@ if(t==4){
                        "SigmaPhi11","SigmaPhi12","SigmaPhi22","SigmaE11","SigmaE12","SigmaE22",
                        "Intercept.se1","Period2.se1","Period3.se1","Period4.se1","Treatment.se1",
                        "Intercept.se2","Period2.se2","Period3.se2","Period4.se2","Treatment.se2",
-                       "SigmaPhi11.se","SigmaPhi12.se","SigmaPhi22.se","SigmaE11.se","SigmaE12.se","SigmaE22.se")
+                       "SigmaPhi11.se","SigmaPhi12.se","SigmaPhi22.se","SigmaE11.se","SigmaE12.se","SigmaE22.se",
+                       "CovDelta12","CovDelta21")
 }
 
 if(t==5){
@@ -86,7 +90,8 @@ if(t==5){
                        "SigmaPhi11","SigmaPhi12","SigmaPhi22","SigmaE11","SigmaE12","SigmaE22",
                        "Intercept.se1","Period2.se1","Period3.se1","Period4.se1","Period5.se1","Treatment.se1",
                        "Intercept.se2","Period2.se2","Period3.se2","Period4.se2","Period5.se2","Treatment.se2",
-                       "SigmaPhi11.se","SigmaPhi12.se","SigmaPhi22.se","SigmaE11.se","SigmaE12.se","SigmaE22.se")
+                       "SigmaPhi11.se","SigmaPhi12.se","SigmaPhi22.se","SigmaE11.se","SigmaE12.se","SigmaE22.se",
+                       "CovDelta12","CovDelta21")
 }
 
 if(sum(eff)==0) analysis<-"error"

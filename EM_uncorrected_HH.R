@@ -160,7 +160,7 @@ EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
   #SEtheta = rbind(SEtheta, sqrt(diag(Vtheta)))
   
   param <- list(theta=list(zeta=zeta,SigmaE=SigmaE,SigmaPhi=SigmaPhi),loglik=LLnew,eps=epsilon,iter=niter,
-                SEtheta=SEtheta)
+                SEtheta=SEtheta,Vtheta=Vtheta)
   return(param) 
 }
 
