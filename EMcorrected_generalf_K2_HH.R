@@ -1,4 +1,4 @@
-#setwd("C:/Users/lifan/Dropbox/CRT_Coprimary/Data/")
+#setwd("C:/Users/sy89/Dropbox/CRT_Coprimary/Data/")
 #data=read.csv("short2.csv",header=TRUE)
 
 #library(nlme)
@@ -9,12 +9,11 @@ library(numDeriv)
 EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
                      , verbose=FALSE){
   # fit mixed model to initialize parameters
-  #fm1 <- lme(formula1, random = ~ 1|cluster, data=data,control=lmeControl(returnObject=TRUE))
-  #fm2 <- lme(formula2, random = ~ 1|cluster, data=data,control=lmeControl(returnObject=TRUE))
+  #fm1 <- lme(formula1, random = ~ 1|cluster, data=data)
+  #fm2 <- lme(formula2, random = ~ 1|cluster, data=data)
   K <- 2
   zeta <- as.numeric(c(fm1$coefficients$fixed, fm2$coefficients$fixed))
-  ## KP: We now have a time effect to take into account which depends on the number of periods.
-  #beta1 = zeta[1:2] 
+  #beta1 = zeta[1:2]
   #beta2 = zeta[3:4]
   beta1 = as.numeric(fm1$coefficients$fixed)
   beta2 = as.numeric(fm2$coefficients$fixed)
@@ -29,13 +28,12 @@ EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
     stop("\ncovariates do not match between endpoints.")
   ##
   
-  # vector of cluster sizes
   #m <- as.numeric(table(data$cluster))
   m <- as.numeric(table(fm1$groups[[1]]))
   
   s2phi1 <- VarCorr(fm1)[1,1]
   s2phi2 <- VarCorr(fm2)[1,1]
-  SigmaPhi <- diag(c(s2phi1, s2phi2)) # KP: Initialized assuming independence
+  SigmaPhi <- diag(c(s2phi1, s2phi2))
   InvS2Phi <- solve(SigmaPhi)
   
   s2e1 <- VarCorr(fm1)[2,1]
@@ -48,6 +46,7 @@ EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
   #ID <- as.numeric(data$cluster)
   ID <- fm1$groups[[1]]
   n <- length(unique(ID))
+  #X <- as.matrix(cbind(1, data[,"arm"])) # design matrix
   X <- as.matrix(cbind(1, mfX1)) # design matrix
   
   ESSphi1 <- matrix(0,n,K)
@@ -98,6 +97,19 @@ EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
   
   niter=1
   while((niter <= maxiter) & (abs(delta) > epsilon)){
+    # compute model-based variance
+    Ustar <- 0
+    for(j in 1:n){
+      Xj <- X[ID == j,,drop=FALSE]
+      Xjtotal <- matrix(0,K*m[j],2*nvar)
+      Xjtotal[2*(1:m[j])-1,1:nvar] <- Xj
+      Xjtotal[2*(1:m[j]),(nvar+1):(2*nvar)] <- Xj
+      InvSS2 <- solve(SigmaE+m[j]*SigmaPhi)-InvS2E
+      Invj <- kronecker(diag(nrow=m[j]),InvS2E) + 
+        kronecker(matrix(1,m[j],m[j]),InvSS2)/m[j]
+      Ustar <- Ustar + t(Xjtotal)%*%Invj%*%Xjtotal
+    }
+    naive = solve(Ustar)
     
     # Expectation step
     for(j in 1:n){
@@ -105,10 +117,32 @@ EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
       Xj <- X[ID == j,,drop=FALSE]
       residj <- Yj - cbind(Xj%*%beta1, Xj%*%beta2)
       Vj <- solve(InvS2Phi + m[j]*InvS2E)
+      
+      # bias-correction 1
+      Xjtotal <- matrix(0,K*m[j],2*nvar)
+      Xjtotal[2*(1:m[j])-1,1:nvar] <- Xj
+      Xjtotal[2*(1:m[j]),(nvar+1):(2*nvar)] <- Xj
+      obs = c(t(residj))
+      InvSS2 <- solve(SigmaE+m[j]*SigmaPhi)-InvS2E
+      Invj <- kronecker(diag(nrow=m[j]),InvS2E) + 
+        kronecker(matrix(1,m[j],m[j]),InvSS2)/m[j]
+      Omegaj <- kronecker(diag(nrow=m[j]),SigmaE) + 
+        kronecker(matrix(1,m[j],m[j]),SigmaPhi)
+      Hj <- Omegaj %*% solve(Omegaj - Xjtotal%*%naive%*%t(Xjtotal))
+      bcemp <- Hj%*%tcrossprod(obs)
+      bcemp <- 1/2*(bcemp + t(bcemp)) # symmetrize
+      bcprod1 <- kronecker(t(rep(1,m[j])),diag(nrow=2)) %*% bcemp %*%
+        kronecker(rep(1,m[j]),diag(nrow=2))
+      
+      #E step
       Muj <- as.numeric(Vj %*% InvS2E %*% colSums(residj))
-      Nujj <- Vj + tcrossprod(Muj)
+      #Nujj <- Vj + tcrossprod(Muj)
+      Nujj <- Vj + (Vj%*%InvS2E) %*% bcprod1 %*% t(Vj%*%InvS2E)
       ESSphi1[j,] <- Muj
       ESSphi2[,,j] <- Nujj
+      
+      
+      
     }
     
     # Maximization step - phi
@@ -128,11 +162,47 @@ EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
     beta2 = zeta[(nvar+1):(2*nvar)]
     
     # Maximization step - epsilon
+    # bias-correction 2
+    bcre <- 0
+    for(j in 1:n){
+      Yj <- Y[ID == j,,drop=FALSE]
+      Xj <- X[ID == j,,drop=FALSE]
+      residj <- Yj - cbind(Xj%*%beta1, Xj%*%beta2)
+      
+      Xjtotal <- matrix(0,K*m[j],2*nvar)
+      Xjtotal[2*(1:m[j])-1,1:nvar] <- Xj
+      Xjtotal[2*(1:m[j]),(nvar+1):(2*nvar)] <- Xj
+      obs = c(t(residj))
+      InvSS2 <- solve(SigmaE+m[j]*SigmaPhi)-InvS2E
+      Invj <- kronecker(diag(nrow=m[j]),InvS2E) + 
+        kronecker(matrix(1,m[j],m[j]),InvSS2)/m[j]
+      Omegaj <- kronecker(diag(nrow=m[j]),SigmaE) + 
+        kronecker(matrix(1,m[j],m[j]),SigmaPhi)
+      Hj <- Omegaj %*% solve(Omegaj - Xjtotal%*%naive%*%t(Xjtotal))
+      bcemp <- Hj%*%tcrossprod(obs)
+      bcemp <- 1/2*(bcemp + t(bcemp)) # symmetrize
+      
+      mat.size <- ncol(bcemp)
+      num.sub <- m[j]
+      sub.size <- mat.size/num.sub
+      sub.matrices <- lapply(1:num.sub, function(x){
+        locations <- ((x-1)*sub.size+1):(x*sub.size) 
+        bcemp[locations, locations]})
+      bcre = bcre + Reduce('+', sub.matrices)
+    }
+    
+    
+    
     re <- Y - cbind(X%*%beta1, X%*%beta2)
-    rss <- crossprod(re) + rowSums(sweep(ESSphi2,3,m,FUN="*"),dims=2) -
+    #rss <- crossprod(re) + rowSums(sweep(ESSphi2,3,m,FUN="*"),dims=2) -
+    #  crossprod(ESSphi1,rowsum(re,ID)) - crossprod(rowsum(re,ID),ESSphi1)
+    
+    rss <- bcre + rowSums(sweep(ESSphi2,3,m,FUN="*"),dims=2) -
       crossprod(ESSphi1,rowsum(re,ID)) - crossprod(rowsum(re,ID),ESSphi1)
+    
     SigmaE <- rss/sum(m)
-    # SigmaE <- diag(diag(SigmaE))
+    #SigmaE <- diag(diag(SigmaE))
+    
     InvS2E <- solve(SigmaE)
     
     # whether the algorithm converges
@@ -154,19 +224,12 @@ EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
   
   Vtheta = try(solve(-hessian(loglik,thetah)))
   SEtheta = sqrt(diag(Vtheta))
-  #if(class(Vtheta)=="try-error"){i<- i-1; fail_count <- fail_count+1}
-  #if(i<itemp){next}
-  #if(fail_count > max_fail){break}
-  #SEtheta = rbind(SEtheta, sqrt(diag(Vtheta)))
   
   param <- list(theta=list(zeta=zeta,SigmaE=SigmaE,SigmaPhi=SigmaPhi),loglik=LLnew,eps=epsilon,iter=niter,
                 SEtheta=SEtheta)
   return(param) 
 }
 
-
-
-
-
-
-
+# formula1 <-as.formula(  "out1 ~ arm")
+# formula2 <-as.formula(  "out2 ~ arm")
+# EM.estim(data, formula1,formula2, maxiter=500,epsilon=1e-4, verbose=TRUE)
