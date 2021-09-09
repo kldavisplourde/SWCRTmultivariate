@@ -70,14 +70,16 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho2,N,t,m,K,alpha)
   }
   return(SigmaP_Matrix)
   }
-  ####Define function to calculate covariance between betas#####
+  ####Define function to calculate covariance between deltas#####
   calCovbetas <- function(vars,rho01,rho2){
     sigmaE <- constrRiE(rho01,rho2,K,vars)
     sigmaP <- constrRiP(rho01,K,vars)
     #tmp <- solve(diag(1,K)-cv^2*(m*sigmaP %*% solve(sigmaE + m*sigmaP) %*% sigmaE %*% solve(sigmaE + m*sigmaP) ))
     #covMatrix <- 1/(m*sigmaz.square)*(sigmaE+m*sigmaP)%*%tmp
     #covMatrix <- (covMatrix +t(covMatrix))/2  # symmerize the off-diagonal
+  #Stepped wedge
     covMatrix <- (N/(m*(N*U-W)))*(sigmaE-((U^2-N*V)/(U^2+N*t*U-t*W-N*V))*solve(solve(sigmaE)+((N*U-W)/(m*(U^2+N*t*U-t*W-N*V)))*solve(sigmaP)))
+    #covMatrix <- N*t*solve(m*(U^2+N*t*U-t*W-N*V)*solve(sigmaE)+(N*V-U^2)*solve(t*sigmaP+(1/m)*sigmaE))
     return(covMatrix)  
   }
   
