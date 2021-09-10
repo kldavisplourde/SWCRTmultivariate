@@ -2,7 +2,7 @@ library(nlme)
 library(foreach)
 library(doMC)
 library(doRNG)
-library(doSNOW)
+#library(doSNOW)
 
 #load.lib<-c("rmutil","dplyr", "foreach", "reshape2","doSNOW",  "doParallel","mvtnorm","nlme","numDeriv")
 #install.lib<-load.lib[!load.lib %in% installed.packages()]
@@ -19,8 +19,8 @@ if (is.na(k)) k <- 1
 paste("Scenario:",k)
 
 ncores<-as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK",1))
-if (is.na(ncores)) ncores<-2
-registerDoSNOW(makeCluster(ncores))
+if (is.na(ncores)) ncores<-1
+registerDoMC(cores=ncores)
 
 # define scenarios
 scenarios <- read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/Preliminary/prelim_params.txt", header=TRUE, sep="")
@@ -139,7 +139,7 @@ for(a in 1:1)
   
   simData <- results
 }
-  stopCluster(makeCluster(ncores))
+  #stopCluster(makeCluster(ncores))
 
 if(t==3){
   colnames(simData)<-c("Intercept.est1","Period2.est1","Period3.est1","Treatment.est1",
