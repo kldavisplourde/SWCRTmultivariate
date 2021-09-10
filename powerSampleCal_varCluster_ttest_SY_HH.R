@@ -101,21 +101,22 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho2,N,t,m,K,alpha)
     return(wCor)
   }
   sigmaks.sq <- diag( calCovbetas(vars,rho01,rho2))
-  meanVector <- sqrt(N)*(deltas-margins)/sqrt(sigmaks.sq)
+  #meanVector <- sqrt(N)*(deltas-margins)/sqrt(sigmaks.sq)
+  meanVector <- (deltas-margins)/sqrt(sigmaks.sq)
   wCor <- calCorWks(vars,rho01,rho2)
   criticalValue.t <- qt(p=(1-alpha), df=(N-2*K))
   criticalValue.n <- qnorm(p=(1-alpha))
   pred.power.t <- pmvt(lower = rep(criticalValue.t,K),upper=rep(Inf,K),df = (N-2*K), sigma = wCor,delta=meanVector)[1]
   pred.power.n <- pmvnorm(lower = rep(criticalValue.n,K),upper=rep(Inf,K), sigma = wCor,mean=meanVector)[1]
   
-  param <- list(pred.power.t=pred.power.t,pred.power.n=pred.power.n)
+  param <- list(vard=c(sigmaks.sq),pred.power.t=pred.power.t,pred.power.n=pred.power.n)
   return(param)
 }
 
-deltas<-c(0.08,0.13); margins<-c(0,0); vars<-c(1.1,1.05); rho01<-matrix(c(0.02,0.01,0.01,0.015),2); rho2<-matrix(c(1,0.05,0.05,1),2); t<-4; N=(t-1)*5; m<-15;K<-2; alpha<-0.05
-deltas<-c(0.8,0.045); margins<-c(0,0); vars<-c(1.5,1.2); rho01<-matrix(c(0.2,0.1,0.1,0.15),2); rho2<-matrix(c(1,0.3,0.3,1),2); t<-5; N=(t-1)*7; m<-12;K<-2; alpha<-0.05
-deltas<-c(0.25,0.6); margins<-c(0,0); vars<-c(0.8,1.5); rho01<-matrix(c(0.04,0.02,0.02,0.05),2); rho2<-matrix(c(1,0.09,0.09,1),2); t<-3; N=(t-1)*4; m<-10;K<-2; alpha<-0.05
-deltas<-c(1.2,0.2); margins<-c(0,0); vars<-c(2,1.5); rho01<-matrix(c(0.06,0.02,0.02,0.04),2); rho2<-matrix(c(1,0.1,0.1,1),2); t<-3; N=(t-1)*8; m<-5;K<-2; alpha<-0.05
-deltas<-c(0.22,0.22); margins<-c(0,0); vars<-c(1.1,0.7); rho01<-matrix(c(0.1,0.05,0.05,0.15),2); rho2<-matrix(c(1,0.2,0.2,1),2); t<-4; N=(t-1)*4; m<-4;K<-2; alpha<-0.05
+#deltas<-c(0.8,0.3); margins<-c(0,0); vars<-c(1.1,1.05); rho01<-matrix(c(0.02,0.01,0.01,0.015),2); rho2<-matrix(c(1,0.05,0.05,1),2); t<-4; N=(t-1)*5; m<-15;K<-2; alpha<-0.05
+#deltas<-c(0.25,1.3); margins<-c(0,0); vars<-c(1.5,1.2); rho01<-matrix(c(0.2,0.1,0.1,0.15),2); rho2<-matrix(c(1,0.3,0.3,1),2); t<-5; N=(t-1)*7; m<-12;K<-2; alpha<-0.05
+#deltas<-c(1.1,0.95); margins<-c(0,0); vars<-c(0.8,1.5); rho01<-matrix(c(0.04,0.02,0.02,0.05),2); rho2<-matrix(c(1,0.09,0.09,1),2); t<-3; N=(t-1)*4; m<-10;K<-2; alpha<-0.05
+#deltas<-c(2,0.8); margins<-c(0,0); vars<-c(2,1.5); rho01<-matrix(c(0.06,0.02,0.02,0.04),2); rho2<-matrix(c(1,0.1,0.1,1),2); t<-3; N=(t-1)*8; m<-5;K<-2; alpha<-0.05
+deltas<-c(0.75,0.75); margins<-c(0,0); vars<-c(1.1,0.7); rho01<-matrix(c(0.1,0.05,0.05,0.15),2); rho2<-matrix(c(1,0.2,0.2,1),2); t<-4; N=(t-1)*4; m<-4;K<-2; alpha<-0.05
 
 calPower_IU(deltas,margins,vars,rho01,rho2,N,t,m,K,alpha)
