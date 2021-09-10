@@ -1,12 +1,13 @@
-#library(nlme)
-#library(foreach)
-#library(doMC)
-#library(doRNG)
+library(nlme)
+library(foreach)
+library(doMC)
+library(doRNG)
+library(doSNOW)
 
-load.lib<-c("rmutil","dplyr", "foreach", "reshape2","doSNOW",  "doParallel","mvtnorm","nlme","numDeriv")
-install.lib<-load.lib[!load.lib %in% installed.packages()]
-for(lib in install.lib) install.packages(lib,dependencies=TRUE ,repo="http://cran.rstudio.com/")
-sapply(load.lib, require, character=TRUE)
+#load.lib<-c("rmutil","dplyr", "foreach", "reshape2","doSNOW",  "doParallel","mvtnorm","nlme","numDeriv")
+#install.lib<-load.lib[!load.lib %in% installed.packages()]
+#for(lib in install.lib) install.packages(lib,dependencies=TRUE ,repo="http://cran.rstudio.com/")
+#sapply(load.lib, require, character=TRUE)
 
 setwd("/Users/kdavis07/Documents/GitHub/CoPrimarySWCRT")
 source("gendata_copri_varCluster_HH.R")
