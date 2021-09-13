@@ -73,12 +73,12 @@ while(i<nsim){
   if(anyNA(param$theta$zeta)==TRUE|anyNA(param$theta$SigmaE)==TRUE|anyNA(param$theta$SigmaPhi)==TRUE|anyNA(param$SEtheta)==TRUE){i<- i-1;fail_count <-fail_count+1}
   if(fail_count > max_fail){break}
   if(i<itemp){next}
-  ZETA <- rbind(ZETA,param$theta$zeta)
-  SIGMAE[[i]] <- param$theta$SigmaE
-  SIGMAPHI[[i]] <- param$theta$SigmaPhi
-  SEtheta <- rbind(SEtheta,param$SEtheta)
+  #ZETA <- rbind(ZETA,param$theta$zeta)
+  #SIGMAE[[i]] <- param$theta$SigmaE
+  #SIGMAPHI[[i]] <- param$theta$SigmaPhi
+  #SEtheta <- rbind(SEtheta,param$SEtheta)
     
-  results.i<- c(param$theta$zeta,c(param$theta$SigmaPhi[!lower.tri(param$theta$SigmaPhi)]),param$theta$SigmaE[!lower.tri(param$theta$SigmaE)],SEtheta)
+  results.i<- c(param$theta$zeta,c(param$theta$SigmaPhi[!lower.tri(param$theta$SigmaPhi)]),param$theta$SigmaE[!lower.tri(param$theta$SigmaE)],param$SEtheta)
   
   simData<-rbind(simData,results.i)
 }
