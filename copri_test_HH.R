@@ -1,5 +1,5 @@
 library(nlme)
-library(foreach)
+#library(foreach)
 library(doMC)
 library(doRNG)
 #library(doSNOW)
@@ -38,108 +38,51 @@ bs <- 0
 beta <- cumsum(c(0.1,0.1*0.5,0.1*(0.5^2),0.1*(0.5^3),0.1*(0.5^4),0.1*(0.5^5)))[1:t-1]
 nsim<-2
 
+set.seed(k*697+t*4)
+fail_count <- 0
+max_fail <- 200
+  
+ZETA <- SIGMAE <- SIGMAPHI <- SEtheta <- simData <- NULL
+# Loop Index
+i<-0
+# While Loop (discarding false data)
+while(i<nsim){
+  i<-i+1
+  itemp<-i
+  #set.seed(i+173)
+  
+  dt<-datagen_cont(n=N, m=cs, K=2, cv=0, rho01=rho01, rho2=rho2, vars=vars, eff=eff, time.eff=c(beta,beta))
+  data<-dt$short
 
-for(a in 1:1)
-  #foreach(a=1,.combine=rbind, .verbose = T,.export=c('datagen_cont', 'EM.estim'), .packages=c( "mvtnorm","numDeriv","nlme"))%do%
-{
-  set.seed(k*1838+t*10+N+cs)
-  fail_count <- 0
-  max_fail <- 200
-  
-  ZETA <- SIGMAE <- SIGMAPHI <- SEtheta <- results <- NULL
-  # Loop Index
-  i<-0
-  # While Loop (discarding false data)
-  while(i<nsim){
-    i<-i+1
-    itemp<-i
-    set.seed(i+173)
-  
-    dt<-datagen_cont(n=N, m=cs, K=2, cv=0, rho01=rho01, rho2=rho2, vars=vars, eff=eff, time.eff=c(beta,beta))
-    data<-dt$short
-
-    if(t==3){
-      lme1<-lme(out1~time.1+time.2+arm,random=~1|cluster,data=data,control=lmeControl(returnObject=TRUE))
-      lme2<-lme(out2~time.1+time.2+arm,random=~1|cluster,data=data,control=lmeControl(returnObject=TRUE))
-    }
-  
-    if(t==4){
-      lme1<-lme(out1~time.1+time.2+time.3+arm,random=~1|cluster,data=data,control=lmeControl(returnObject=TRUE))
-      lme2<-lme(out2~time.1+time.2+time.3+arm,random=~1|cluster,data=data,control=lmeControl(returnObject=TRUE))
-    }
-  
-    if(t==5){
-      lme1<-lme(out1~time.1+time.2+time.3+time.4+arm,random=~1|cluster,data=data,control=lmeControl(returnObject=TRUE))
-      lme2<-lme(out2~time.1+time.2+time.3+time.4+arm,random=~1|cluster,data=data,control=lmeControl(returnObject=TRUE))
-    }
-
-    param<-try(EM.estim(data,lme1,lme2, maxiter=500, epsilon=1e-4, verbose=FALSE))
-    if(class(param)=="try-error"){i<- i-1;fail_count <-fail_count+1}
-    if(i<itemp){next}
-    if(fail_count > max_fail){break}
-    ZETA <- rbind(ZETA,param$theta$zeta)
-    SIGMAE[[i]] <- param$theta$SigmaE
-    SIGMAPHI[[i]] <- param$theta$SigmaPhi
-    
-    thetah<- c(param$theta$zeta,c(param$theta$SigmaPhi[!lower.tri(param$theta$SigmaPhi)]),param$theta$SigmaE[!lower.tri(param$theta$SigmaE)])
-
-    TermsX1 <- lme1$terms
-    TermsX2 <- lme2$terms
-    mfX1 <- model.frame(TermsX1, data = data)[,-1]
-    mfX2 <- model.frame(TermsX2, data = data)[,-1]
-    Y <- as.matrix(cbind(model.frame(TermsX1, data = data)[,1],model.frame(TermsX2, data = data)[,1]))
-    X <- as.matrix(cbind(1, mfX1)) # design matrix
-    
-    ID <- lme1$groups[[1]]
-    n <- length(unique(ID))
-    m <- as.numeric(table(lme1$groups[[1]]))
-    nvar<-length(as.numeric(lme1$coefficients$fixed))
-    
-    # log likelihood
-    
-    loglik = function(theta){
-      beta1 = theta[1:nvar]
-      beta2 = theta[(nvar+1):(2*nvar)]
-      sphi11 = theta[(2*nvar+1)]
-      sphi12 = theta[(2*nvar+2)]
-      sphi22 = theta[(2*nvar+3)]
-      se11 = theta[(2*nvar+4)]
-      se12 = theta[(2*nvar+5)]
-      se22 = theta[(2*nvar+6)]
-      SigmaPhi = matrix(c(sphi11,sphi12,sphi12,sphi22),2,2)
-      SigmaE = matrix(c(se11,se12,se12,se22),2,2)
-      InvS2Phi <- solve(SigmaPhi)
-      InvS2E <- solve(SigmaE)
-      
-      temp <- 0
-      for(j in 1:n){
-        Yj <- Y[ID == j,,drop=FALSE]
-        Xj <- X[ID == j,,drop=FALSE]
-        residj <- Yj - cbind(Xj%*%beta1, Xj%*%beta2)
-        obs = c(t(residj))
-        tm1 <- (m[j]-1)*log(det(SigmaE))+log(det(SigmaE+m[j]*SigmaPhi))
-        InvSS2 <- solve(SigmaE+m[j]*SigmaPhi)-InvS2E
-        Invj <- kronecker(diag(nrow=m[j]),InvS2E) + 
-          kronecker(matrix(1,m[j],m[j]),InvSS2)/m[j]
-        tm2 <- c(t(obs) %*% Invj %*% obs)
-        temp <- temp-(tm1+tm2)/2
-      }
-      temp
-    }
-    
-    Vtheta = try(solve(-hessian(loglik,thetah)))
-    if(class(Vtheta)=="try-error"){i<- i-1; fail_count <- fail_count+1}
-    if(i<itemp){next}
-    if(fail_count > max_fail){break}
-    SEtheta = rbind(SEtheta, sqrt(diag(Vtheta)))
-  
-  #c(betas,SigmaPhi,SigmaE,SEtheta,covDelta12,covDelta21)
-  results<-rbind(results,c(thetah,SEtheta))
+  if(t==3){
+    lme1<-lme(out1~time.1+time.2+arm,random=~1|cluster,data=data,control=lmeControl(returnObject=TRUE))
+    lme2<-lme(out2~time.1+time.2+arm,random=~1|cluster,data=data,control=lmeControl(returnObject=TRUE))
   }
   
-  simData <- results
+  if(t==4){
+    lme1<-lme(out1~time.1+time.2+time.3+arm,random=~1|cluster,data=data,control=lmeControl(returnObject=TRUE))
+    lme2<-lme(out2~time.1+time.2+time.3+arm,random=~1|cluster,data=data,control=lmeControl(returnObject=TRUE))
+  }
+  
+  if(t==5){
+    lme1<-lme(out1~time.1+time.2+time.3+time.4+arm,random=~1|cluster,data=data,control=lmeControl(returnObject=TRUE))
+    lme2<-lme(out2~time.1+time.2+time.3+time.4+arm,random=~1|cluster,data=data,control=lmeControl(returnObject=TRUE))
+  }
+
+  param<-try(EM.estim(data,lme1,lme2, maxiter=500, epsilon=1e-4, verbose=FALSE))
+  if(anyNA(param$theta$zeta)==TRUE|anyNA(param$theta$SigmaE)==TRUE|anyNA(param$theta$SigmaPhi)==TRUE|anyNA(param$SEtheta)==TRUE){i<- i-1;fail_count <-fail_count+1}
+  if(fail_count > max_fail){break}
+  if(i<itemp){next}
+  ZETA <- rbind(ZETA,param$theta$zeta)
+  SIGMAE[[i]] <- param$theta$SigmaE
+  SIGMAPHI[[i]] <- param$theta$SigmaPhi
+  SEtheta <- rbind(SEtheta,param$SEtheta)
+    
+  results.i<- c(param$theta$zeta,c(param$theta$SigmaPhi[!lower.tri(param$theta$SigmaPhi)]),param$theta$SigmaE[!lower.tri(param$theta$SigmaE)],SEtheta)
+  
+  simData<-rbind(simData,results.i)
 }
-  #stopCluster(makeCluster(ncores))
+#stopCluster(makeCluster(ncores))
 
 if(t==3){
   colnames(simData)<-c("Intercept.est1","Period2.est1","Period3.est1","Treatment.est1",
