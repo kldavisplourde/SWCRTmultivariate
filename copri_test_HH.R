@@ -1,13 +1,7 @@
 library(nlme)
-#library(foreach)
 library(doMC)
 library(doRNG)
-#library(doSNOW)
-
-#load.lib<-c("rmutil","dplyr", "foreach", "reshape2","doSNOW",  "doParallel","mvtnorm","nlme","numDeriv")
-#install.lib<-load.lib[!load.lib %in% installed.packages()]
-#for(lib in install.lib) install.packages(lib,dependencies=TRUE ,repo="http://cran.rstudio.com/")
-#sapply(load.lib, require, character=TRUE)
+library(lmeInfo)
 
 setwd("/Users/kdavis07/Documents/GitHub/CoPrimarySWCRT")
 source("gendata_copri_varCluster_HH.R")
@@ -23,7 +17,7 @@ if (is.na(ncores)) ncores<-1
 registerDoMC(cores=ncores)
 
 # define scenarios
-scenarios <- read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/Preliminary/prelim_params.txt", header=TRUE, sep="")
+scenarios <- read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/Sim_Params.txt", header=TRUE, sep="")
 scenarios <- subset(scenarios, scenario == k)
 
 scenario <- k
@@ -33,16 +27,16 @@ cs <- scenarios$m
 eff<-c(scenarios$delta1,scenarios$delta2)
 rho01<-matrix(c(scenarios$rho01.11,scenarios$rho01.12,scenarios$rho01.12,scenarios$rho01.22),2)
 rho2<-matrix(c(1,scenarios$rho2.12,scenarios$rho2.12,1),2)
-vars<-c(scenarios$var1,scenarios$var2)
+vars<-c(1,1) #c(scenarios$var1,scenarios$var2)
 bs <- 0
 beta <- cumsum(c(0.1,0.1*0.5,0.1*(0.5^2),0.1*(0.5^3),0.1*(0.5^4),0.1*(0.5^5)))[1:t-1]
 nsim<-2
 
-set.seed(k*697+t*4)
+set.seed(837+k)
 fail_count <- 0
 max_fail <- 200
   
-ZETA <- SIGMAE <- SIGMAPHI <- SEtheta <- simData <- NULL
+simData <- naive.simData <- NULL
 # Loop Index
 i<-0
 # While Loop (discarding false data)
@@ -73,14 +67,20 @@ while(i<nsim){
   if(anyNA(param$theta$zeta)==TRUE|anyNA(param$theta$SigmaE)==TRUE|anyNA(param$theta$SigmaPhi)==TRUE|anyNA(param$SEtheta)==TRUE){i<- i-1;fail_count <-fail_count+1}
   if(fail_count > max_fail){break}
   if(i<itemp){next}
-  #ZETA <- rbind(ZETA,param$theta$zeta)
-  #SIGMAE[[i]] <- param$theta$SigmaE
-  #SIGMAPHI[[i]] <- param$theta$SigmaPhi
-  #SEtheta <- rbind(SEtheta,param$SEtheta)
-    
+  
   results.i<- c(param$theta$zeta,c(param$theta$SigmaPhi[!lower.tri(param$theta$SigmaPhi)]),param$theta$SigmaE[!lower.tri(param$theta$SigmaE)],param$SEtheta)
   
+  # From individual models (not taking into account between-outcome within-subject correlation)
+  naive.zeta <- as.numeric(c(lme1$coefficients$fixed, lme2$coefficients$fixed))
+  naive.SE <- as.numeric(c(sqrt(diag(lme1$varFix)),sqrt(diag(lme2$varFix)),sqrt(diag(varcomp_vcov(lme1))),sqrt(diag(varcomp_vcov(lme2)))))
+  naive.SigmaE<-as.numeric(c(VarCorr(lme1)[2,1],VarCorr(lme2)[2,1]))
+  naive.SigmaPhi<-as.numeric(c(VarCorr(lme1)[1,1],VarCorr(lme2)[1,1]))
+  
+  naive.i<-c(naive.zeta,naive.SigmaPhi,naive.SigmaE,naive.SE)
+  
+  # combining results
   simData<-rbind(simData,results.i)
+  naive.simData<-rbind(naive.simData,naive.i)
 }
 #stopCluster(makeCluster(ncores))
 
@@ -91,6 +91,13 @@ if(t==3){
                        "Intercept.se1","Period2.se1","Period3.se1","Treatment.se1",
                        "Intercept.se2","Period2.se2","Period3.se2","Treatment.se2",
                        "SigmaPhi11.se","SigmaPhi12.se","SigmaPhi22.se","SigmaE11.se","SigmaE12.se","SigmaE22.se")
+  
+  colnames(naive.simData)<-c("Intercept.est1","Period2.est1","Period3.est1","Treatment.est1",
+                       "Intercept.est2","Period2.est2","Period3.est2","Treatment.est2",
+                       "SigmaPhi11","SigmaPhi22","SigmaE11","SigmaE22",
+                       "Intercept.se1","Period2.se1","Period3.se1","Treatment.se1",
+                       "Intercept.se2","Period2.se2","Period3.se2","Treatment.se2",
+                       "SigmaPhi11.se","SigmaE11.se","SigmaPhi22.se","SigmaE22.se")
 }
 
 if(t==4){
@@ -100,6 +107,13 @@ if(t==4){
                        "Intercept.se1","Period2.se1","Period3.se1","Period4.se1","Treatment.se1",
                        "Intercept.se2","Period2.se2","Period3.se2","Period4.se2","Treatment.se2",
                        "SigmaPhi11.se","SigmaPhi12.se","SigmaPhi22.se","SigmaE11.se","SigmaE12.se","SigmaE22.se")
+  
+  colnames(naive.simData)<-c("Intercept.est1","Period2.est1","Period3.est1","Period4.est1","Treatment.est1",
+                       "Intercept.est2","Period2.est2","Period3.est2","Period4.est2","Treatment.est2",
+                       "SigmaPhi11","SigmaPhi22","SigmaE11","SigmaE22",
+                       "Intercept.se1","Period2.se1","Period3.se1","Period4.se1","Treatment.se1",
+                       "Intercept.se2","Period2.se2","Period3.se2","Period4.se2","Treatment.se2",
+                       "SigmaPhi11.se","SigmaE11.se","SigmaPhi22.se","SigmaE22.se")
 }
 
 if(t==5){
@@ -109,11 +123,21 @@ if(t==5){
                        "Intercept.se1","Period2.se1","Period3.se1","Period4.se1","Period5.se1","Treatment.se1",
                        "Intercept.se2","Period2.se2","Period3.se2","Period4.se2","Period5.se2","Treatment.se2",
                        "SigmaPhi11.se","SigmaPhi12.se","SigmaPhi22.se","SigmaE11.se","SigmaE12.se","SigmaE22.se")
+  
+  colnames(naive.simData)<-c("Intercept.est1","Period2.est1","Period3.est1","Period4.est1","Period5.est1","Treatment.est1",
+                       "Intercept.est2","Period2.est2","Period3.est2","Period4.est2","Period5.est2","Treatment.est2",
+                       "SigmaPhi11","SigmaPhi22","SigmaE11","SigmaE22",
+                       "Intercept.se1","Period2.se1","Period3.se1","Period4.se1","Period5.se1","Treatment.se1",
+                       "Intercept.se2","Period2.se2","Period3.se2","Period4.se2","Period5.se2","Treatment.se2",
+                       "SigmaPhi11.se","SigmaE11.se","SigmaPhi22.se","SigmaE22.se")
 }
 
 if(sum(eff)==0) analysis<-"error"
 if(sum(eff) != 0) analysis<-"power"
 
 simData <- as.data.frame(simData)
+naive.simData <- as.data.frame(naive.simData)
+
 write.table(simData, file=paste("results/UncorrectedResults_",analysis,"_scenario",scenario,".txt",sep=""), sep="\t", row.names=F)
+write.table(naive.simData, file=paste("results/NaiveResults_",analysis,"_scenario",scenario,".txt",sep=""), sep="\t", row.names=F)
 #write.table(simData, file=paste("results/CorrectedResults_",analysis,"_scenario",scenario,".txt",sep=""), sep="\t", row.names=F)
