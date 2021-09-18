@@ -25,6 +25,10 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
   mfX2 <- model.frame(TermsX2, data = data)[,-1]
   if (identical(mfX1,mfX2) == FALSE)
     stop("\ncovariates do not match between endpoints.")
+  # Z matrix
+  bar.f <- findbars(formula(fm1)) # Identify random effect terms (find |)
+  mf <- model.frame(subbars(fm1),data=data) # Replaces | with +
+  Z <- t(mkReTrms(bar.f,mf,reorder.terms=FALSE)$Zt) # phi=(b_{11},b_{12},...,b_{I1},b_{I2},s_{111},s_{112},...,s_{1T1},s_{1T2},s_{I11},...,s_{IT2})'
   ##
   
   # vector of cluster sizes and cluster-period sizes
@@ -51,23 +55,36 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
   Y <- as.matrix(cbind(model.frame(TermsX1, data = data)[,1],model.frame(TermsX2, data = data)[,1]))
   ID <- data[, paste(cluster)]
   ID.period <- data[, paste(cluster.period)]
-  n <- length(unique(ID))
-  np <- length(unique(data[, paste(cluster.period)]))
-  nperiods <- table(unique(cbind(data[, paste(cluster)],data[, paste(cluster.period)]))[,1])
+  n <- length(unique(ID)) # number of clusters
+  np <- length(unique(data[, paste(cluster.period)])) # number of cluster-periods
+  nperiods <- table(unique(cbind(data[, paste(cluster)],data[, paste(cluster.period)]))[,1]) # number of periods in each cluster
   cID.period <- unique(cbind(data[, paste(cluster)],data[, paste(cluster.period)]))[,1]
   X <- as.matrix(cbind(1, mfX1)) # design matrix
+  
+  # Function for generating inverse of block diagonal covariance matrix for the set of all random effects
+  bdiag_m <- function(lmat) {
+    ## Copyright (C) 2016 Martin Maechler, ETH Zurich
+    if(!length(lmat)) return(new("dgCMatrix"))
+    stopifnot(is.list(lmat), is.matrix(lmat[[1]]),
+              (k <- (d <- dim(lmat[[1]]))[1]) == d[2], # k x k
+              all(vapply(lmat, dim, integer(2)) == k)) # all of them
+    N <- length(lmat)
+    if(N * k > .Machine$integer.max)
+      stop("resulting matrix too large; would be  M x M, with M=", N*k)
+    M <- as.integer(N * k)
+    ## result: an   M x M  matrix
+    new("dgCMatrix", Dim = c(M,M),
+        ## 'i :' maybe there's a faster way (w/o matrix indexing), but elegant?
+        i = as.vector(matrix(0L:(M-1L), nrow=k)[, rep(seq_len(N), each=k)]),
+        p = k * 0L:M,
+        x = as.double(unlist(lmat, recursive=FALSE, use.names=FALSE)))
+  }
   
   ESSphi1 <- matrix(0,n,K)
   ESSphi2 <- array(0,c(K,K,n))
   
   ESSpsi1 <- matrix(0,np,K)
   ESSpsi2 <- array(0,c(K,K,np))
-  
-  phipsi2 <- array(0,c(K,K,np))
-  ESSphi2vpsi <- array(0,c(K,K,n))
-  Vjpsi <- array(0,c(K,K,np))
-  ESSsumpsi2 <- array(0,c(K,K,n))
-  ESSpsi1n2 <- matrix(0,np,K)
   
   
   #maxiter=500
@@ -100,7 +117,7 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
     
     temp <- 0
     for(j in 1:n){
-      N <- m[j]/nperiods[j]
+      N <- m[j]/nperiods[j]           #Assumes equal number of subjects/period! Want to change this to be dynamic...
       Yj <- Y[ID == j,,drop=FALSE]
       Xj <- X[ID == j,,drop=FALSE]
       residj <- Yj - cbind(Xj%*%beta1, Xj%*%beta2)
@@ -114,9 +131,10 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
       tm2 <- c(t(obs) %*% Invj %*% obs)
       temp <- temp-(tm1+tm2)/2
     }
+    
     temp
   }
-  thetah = c(zeta,c(SigmaPhi[!lower.tri(SigmaPhi)]),c(SigmaE[!lower.tri(SigmaE)]),c(SigmaPsi[!lower.tri(SigmaPsi)]))
+  thetah = c(zeta,c(SigmaPhi[!lower.tri(SigmaPhi)]),c(SigmaPsi[!lower.tri(SigmaPsi)]),c(SigmaE[!lower.tri(SigmaE)]))
   LLold <- loglik(thetah)
   
   
@@ -124,38 +142,48 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
   while((niter <= maxiter) & (abs(delta) > epsilon)){
     
     # Expectation step
-    for(j in 1:np){
-      Yj <- Y[ID.period == j,,drop=FALSE]
-      Xj <- X[ID.period == j,,drop=FALSE]
-      residj <- Yj - cbind(Xj%*%beta1, Xj%*%beta2)
-      Vj <- solve(InvS2Psi + mp[j]*InvS2E)
-      Muj <- as.numeric(Vj %*% InvS2E %*% colSums(residj))
-      Nujj <- Vj + tcrossprod(Muj)
-      ESSpsi1[j,] <- Muj
-      ESSpsi2[,,j] <- Nujj
-      
-      ESSpsi1n2[j,] <- (mp[j]*mp[j])*Muj
-      Vjpsi[,,j] <- (mp[j]*mp[j])*Vj
-      phipsi2[,,j] <- (mp[j]*mp[j])*(Vj %*% InvS2E)
-    }
-    
+    count <- 1
     for(j in 1:n){
       Yj <- Y[ID == j,,drop=FALSE]
       Xj <- X[ID == j,,drop=FALSE]
+      Zj <- Z[ID == j,] 
+      Zj <- Zj[,colSums(Zj)>0] 
+      Zjj <- matrix(0,2*nrow(Zj),2*ncol(Zj))
+      for (k in 1:ncol(Zj)){
+        for (r in 1:nrow(Zj)){
+          Zjj[r,2*k-1] <- Zj[r,k]
+          Zjj[nrow(Zj)+r,2*k] <- Zj[r,k]
+        }
+      }
+      mlist <- c(replicate(1,InvS2Phi,simplify=FALSE),replicate(nperiods[j], InvS2Psi, simplify=FALSE))
+      InvS2Zeta <- bdiag_m(mlist)
       residj <- Yj - cbind(Xj%*%beta1, Xj%*%beta2)
-      Vj <- solve(InvS2Phi + m[j]*InvS2E)
-      Muj <- as.numeric(Vj %*% InvS2E %*% colSums(residj))
+      #ZZt <- crossprod(Zjj)
+      #Vj <- solve(InvS2Zeta + m[j]*kronecker(InvS2E, ZZt))
+      Vj <- solve(InvS2Zeta + m[j]*t(Zjj)%*%kronecker(diag(nrow(Xj)),InvS2E)%*%Zjj)
+      r1 <- t(Zj)%*%residj[,1]
+      r2 <- t(Zj)%*%residj[,2]
+      Muj <- Vj %*% rbind(InvS2E[1,1]*r1 + InvS2E[1,2]*r2,
+                              InvS2E[2,1]*r1 + InvS2E[2,2]*r2)
       Nujj <- Vj + tcrossprod(Muj)
-      ESSphi1[j,] <- Muj
-      ESSphi2[,,j] <- Nujj
       
-      ind.f <- min(which(cID.period == j))
-      ind.l <- max(which(cID.period == j))
-      phipsi2j <- phipsi2[,,ind.f:ind.l]
-      ESSphi2vpsi[,,j] <- Nujj%*%rowSums(phipsi2j,dims=2)
+      ESSphi1[j,] <- Muj[1:K,]
+      ESSphi2[,,j] <- as.matrix(Nujj[1:K,1:K])
       
-      Vpsij <- Vjpsi[,,ind.f:ind.l]
-      ESSsumpsi2[,,j] <- (rowSums(Vpsij,dims=2) + tcrossprod(colSums(ESSpsi1n2[ind.f:ind.l,])))%*%(Vj %*% InvS2E)
+      Sij <- Muj[-c(1:K),]
+      VSij <- Nujj[,-(1:K)][-(1:K),]
+      
+      for(k in 1:nperiods[j]){
+        ESSpsi1[count,] <- Sij[1:K]
+        ESSpsi2[,,count] <- as.matrix(VSij[1:K,1:K])
+        count <- count + 1
+        Sij <- Sij[-(1:K)]
+        VSij <- VSij[,-(1:K)][-(1:K),]
+      }
+      
+      #ZMU <- Zjj%*%Muj
+      #Zmu <- matrix(c(ZMU[1:nrow(Xj),],ZMU[(nrow(Xj)+1):(2*nrow(Xj)),]),nrow(Xj),K)
+      #ZMUMUZ <- Zjj%*%Nujj%*%t(Zjj)
     }
     
     # Maximization step - phi & psi
@@ -182,8 +210,7 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
     rss <- crossprod(re) + rowSums(sweep(ESSphi2,3,m,FUN="*"),dims=2) + rowSums(sweep(ESSpsi2,3,mp,FUN="*"),dims=2) -
       crossprod(ESSphi1,rowsum(re,ID)) - crossprod(rowsum(re,ID),ESSphi1) -
       crossprod(ESSpsi1,rowsum(re,ID.period)) - crossprod(rowsum(re,ID.period),ESSpsi1) +
-      crossprod(ESSphi1,rowsum(sweep(ESSpsi1,1,mp,FUN="*"),cID.period)) + crossprod(rowsum(sweep(ESSpsi1,1,mp,FUN="*"),cID.period),ESSphi1) +
-      rowSums(ESSphi2vpsi,dims=2) +rowSums(ESSsumpsi2,dims=2)
+      crossprod(ESSphi1,rowsum(sweep(ESSpsi1,1,mp,FUN="*"),cID.period)) + crossprod(rowsum(sweep(ESSpsi1,1,mp,FUN="*"),cID.period),ESSphi1)
     SigmaE <- rss/sum(m)
     InvS2E <- solve(SigmaE)
     
@@ -195,7 +222,7 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
     converge = (abs(delta)<=epsilon)
     niter <- niter + 1
     #if(verbose) cat(paste('iter=',niter),'\t',paste('param.error=',epsilon),'\t',paste('loglik=',LLnew),'\n');
-    if(verbose) cat(paste('iter=',niter),'\t',paste('param.error=',epsilon),'\t',paste('loglik=',LLnew),'\t',paste('SigmaE=',c(SigmaE[!lower.tri(SigmaE)])),'\n')
+    if(verbose) cat(paste('iter=',niter),'\t',paste('loglik=',LLnew),'\t',paste('SigmaE=',c(SigmaE[!lower.tri(SigmaE)])),'\n')
     
     #print(niter)
     #print(zeta)
