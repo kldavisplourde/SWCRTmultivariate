@@ -64,7 +64,7 @@ while(i<nsim){
   }
 
   param<-try(EM.estim(data,lme1,lme2, maxiter=500, epsilon=1e-4, verbose=FALSE))
-  if(anyNA(param$theta$zeta)==TRUE|anyNA(param$theta$SigmaE)==TRUE|anyNA(param$theta$SigmaPhi)==TRUE|anyNA(param$SEtheta)==TRUE){i<- i-1;fail_count <-fail_count+1}
+  if(param$SEcheck=="ERROR"|anyNA(param$theta$zeta)==TRUE|anyNA(param$theta$SigmaE)==TRUE|anyNA(param$theta$SigmaPhi)==TRUE){i<- i-1;fail_count <-fail_count+1}
   if(fail_count > max_fail){break}
   if(i<itemp){next}
   
