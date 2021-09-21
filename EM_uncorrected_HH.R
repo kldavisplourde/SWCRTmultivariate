@@ -152,15 +152,19 @@ EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
     #print(LLnew)
   }
   
-  Vtheta = try(solve(-hessian(loglik,thetah)))
-  SEtheta = sqrt(diag(Vtheta))
+  Vtheta <- matrix(NA,length(thetah),length(thetah))
+  try(Vtheta <- solve(-hessian(loglik,thetah))) #, silent = TRUE
+  SEcheck <- "GOOD"
+  if(anyNA(Vtheta)==TRUE|min(diag(Vtheta))<0) SEcheck <- "ERROR"
+  #Vtheta = try(solve(-hessian(loglik,thetah)))
+  #SEtheta = sqrt(diag(Vtheta))
   #if(class(Vtheta)=="try-error"){i<- i-1; fail_count <- fail_count+1}
   #if(i<itemp){next}
   #if(fail_count > max_fail){break}
   #SEtheta = rbind(SEtheta, sqrt(diag(Vtheta)))
   
   param <- list(theta=list(zeta=zeta,SigmaE=SigmaE,SigmaPhi=SigmaPhi),loglik=LLnew,eps=epsilon,iter=niter,
-                SEtheta=SEtheta,Vtheta=Vtheta)
+                Vtheta=Vtheta,SEcheck=SEcheck) #SEtheta=SEtheta,
   return(param) 
 }
 
