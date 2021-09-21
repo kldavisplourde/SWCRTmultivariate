@@ -120,19 +120,32 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
     
     temp <- 0
     for(j in 1:n){
-      N <- m[j]/nperiods[j]           #Assumes equal number of subjects/period...maybe sum over cluster-periods?????
       Yj <- Y[ID == j,,drop=FALSE]
       Xj <- X[ID == j,,drop=FALSE]
       residj <- Yj - cbind(Xj%*%beta1, Xj%*%beta2)
       obs = c(t(residj))
-      tm1 <- nperiods[j]*(N-1)*log(det(SigmaE))+(nperiods[j]-1)*log(det(SigmaE+N*SigmaPsi))+log(det(SigmaE+N*(SigmaPsi+nperiods[j]*SigmaPhi)))
-      InvSS2 <- solve(SigmaE+N*SigmaPsi)-InvS2E
-      InvSS22 <- solve(SigmaE+N*(SigmaPsi+nperiods[j]*SigmaPhi))-solve(SigmaE+N*SigmaPsi)
-      Invj <- kronecker(diag(1,nrow=nperiods[j]),kronecker(diag(1,nrow=N),InvS2E) + 
-        kronecker(matrix(1,N,N),InvSS2)/N) +
-        kronecker(matrix(1,nperiods[j],nperiods[j]),kronecker(matrix(1,N,N),InvSS22)/(nperiods[j]*N))
-      tm2 <- c(t(obs) %*% Invj %*% obs)
-      temp <- temp-(tm1+tm2)/2
+      psizes <- mp[cID.period==j]
+      if(m[j]/nperiods[j] == psizes[1]){     #If equal number of subjects/period
+        N <- psizes[1]          
+        tm1 <- nperiods[j]*(N-1)*log(det(SigmaE))+(nperiods[j]-1)*log(det(SigmaE+N*SigmaPsi))+log(det(SigmaE+N*(SigmaPsi+nperiods[j]*SigmaPhi)))
+        InvSS2 <- solve(SigmaE+N*SigmaPsi)-InvS2E
+        InvSS22 <- solve(SigmaE+N*(SigmaPsi+nperiods[j]*SigmaPhi))-solve(SigmaE+N*SigmaPsi)
+        Invj <- kronecker(diag(1,nrow=nperiods[j]),kronecker(diag(1,nrow=N),InvS2E) + 
+                            kronecker(matrix(1,N,N),InvSS2)/N) +
+          kronecker(matrix(1,nperiods[j],nperiods[j]),kronecker(matrix(1,N,N),InvSS22)/(nperiods[j]*N))
+        tm2 <- c(t(obs) %*% Invj %*% obs)
+        temp <- temp-(tm1+tm2[1])/2
+      } else {                                #If unequal number of subjects/period
+        mlist <- list(kronecker(matrix(1,psizes[1],psizes[1]), SigmaPsi))
+        for (k in 2:nperiods[j]){
+          mlist<- c(mlist,list(kronecker(matrix(1,psizes[k],psizes[k]), SigmaPsi)))
+        }
+        Omega <- bdiag_m(mlist) + kronecker(diag(1,m[j]),SigmaE) + kronecker(matrix(1,m[j],m[j]),SigmaPhi)
+        Invj <- solve(Omega)
+        tm1 <- log(det(Omega))
+        tm2 <- t(obs) %*% Invj %*% obs
+        temp <- temp-(tm1+tm2[1])/2
+      }
     }
     
     temp
