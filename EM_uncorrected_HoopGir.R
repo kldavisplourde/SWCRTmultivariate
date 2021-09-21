@@ -58,6 +58,7 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
   n <- length(unique(ID)) # number of clusters
   np <- length(unique(data[, paste(cluster.period)])) # number of cluster-periods
   nperiods <- table(unique(cbind(data[, paste(cluster)],data[, paste(cluster.period)]))[,1]) # number of periods in each cluster
+  t <- max(nperiods)
   cID.period <- unique(cbind(data[, paste(cluster)],data[, paste(cluster.period)]))[,1]
   X <- as.matrix(cbind(1, mfX1)) # design matrix
   
@@ -85,6 +86,8 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
   
   ESSpsi1 <- matrix(0,np,K)
   ESSpsi2 <- array(0,c(K,K,np))
+  
+  ESSphipsi2 <- array(0,c(K,K,np))
   
   
   #maxiter=500
@@ -117,7 +120,7 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
     
     temp <- 0
     for(j in 1:n){
-      N <- m[j]/nperiods[j]           #Assumes equal number of subjects/period! Want to change this to be dynamic...
+      N <- m[j]/nperiods[j]           #Assumes equal number of subjects/period...maybe sum over cluster-periods?????
       Yj <- Y[ID == j,,drop=FALSE]
       Xj <- X[ID == j,,drop=FALSE]
       residj <- Yj - cbind(Xj%*%beta1, Xj%*%beta2)
@@ -125,7 +128,7 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
       tm1 <- nperiods[j]*(N-1)*log(det(SigmaE))+(nperiods[j]-1)*log(det(SigmaE+N*SigmaPsi))+log(det(SigmaE+N*(SigmaPsi+nperiods[j]*SigmaPhi)))
       InvSS2 <- solve(SigmaE+N*SigmaPsi)-InvS2E
       InvSS22 <- solve(SigmaE+N*(SigmaPsi+nperiods[j]*SigmaPhi))-solve(SigmaE+N*SigmaPsi)
-      Invj <- kronecker(diag(nrow=nperiods[j]),kronecker(diag(nrow=N),InvS2E) + 
+      Invj <- kronecker(diag(1,nrow=nperiods[j]),kronecker(diag(1,nrow=N),InvS2E) + 
         kronecker(matrix(1,N,N),InvSS2)/N) +
         kronecker(matrix(1,nperiods[j],nperiods[j]),kronecker(matrix(1,N,N),InvSS22)/(nperiods[j]*N))
       tm2 <- c(t(obs) %*% Invj %*% obs)
@@ -143,6 +146,7 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
     
     # Expectation step
     count <- 1
+    count2 <- 1
     for(j in 1:n){
       Yj <- Y[ID == j,,drop=FALSE]
       Xj <- X[ID == j,,drop=FALSE]
@@ -158,9 +162,9 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
       mlist <- c(replicate(1,InvS2Phi,simplify=FALSE),replicate(nperiods[j], InvS2Psi, simplify=FALSE))
       InvS2Zeta <- bdiag_m(mlist)
       residj <- Yj - cbind(Xj%*%beta1, Xj%*%beta2)
-      #ZZt <- crossprod(Zjj)
+      #ZZt <- crossprod(Zj)
       #Vj <- solve(InvS2Zeta + m[j]*kronecker(InvS2E, ZZt))
-      Vj <- solve(InvS2Zeta + m[j]*t(Zjj)%*%kronecker(diag(nrow(Xj)),InvS2E)%*%Zjj)
+      Vj <- solve(InvS2Zeta + m[j]*t(Zjj)%*%kronecker(diag(1,nrow=nrow(Xj)),InvS2E)%*%Zjj)
       r1 <- t(Zj)%*%residj[,1]
       r2 <- t(Zj)%*%residj[,2]
       Muj <- Vj %*% rbind(InvS2E[1,1]*r1 + InvS2E[1,2]*r2,
@@ -181,9 +185,12 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
         VSij <- VSij[,-(1:K)][-(1:K),]
       }
       
-      #ZMU <- Zjj%*%Muj
-      #Zmu <- matrix(c(ZMU[1:nrow(Xj),],ZMU[(nrow(Xj)+1):(2*nrow(Xj)),]),nrow(Xj),K)
-      #ZMUMUZ <- Zjj%*%Nujj%*%t(Zjj)
+      Vbs <- Nujj
+      for(k in 1:t){
+        ESSphipsi2[,,count2] <- as.matrix(Vbs[1:K,(K+1):(2*K)]) + as.matrix(Vbs[(K+1):(2*K),1:K]) 
+        Vbs <- Vbs[,-((K+1):(2*K))][-((K+1):(2*K)),]
+        count2 <- count2 + 1
+      }
     }
     
     # Maximization step - phi & psi
@@ -210,7 +217,7 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
     rss <- crossprod(re) + rowSums(sweep(ESSphi2,3,m,FUN="*"),dims=2) + rowSums(sweep(ESSpsi2,3,mp,FUN="*"),dims=2) -
       crossprod(ESSphi1,rowsum(re,ID)) - crossprod(rowsum(re,ID),ESSphi1) -
       crossprod(ESSpsi1,rowsum(re,ID.period)) - crossprod(rowsum(re,ID.period),ESSpsi1) +
-      crossprod(ESSphi1,rowsum(sweep(ESSpsi1,1,mp,FUN="*"),cID.period)) + crossprod(rowsum(sweep(ESSpsi1,1,mp,FUN="*"),cID.period),ESSphi1)
+      rowSums(sweep(ESSphipsi2,3,mp,FUN="*"),dims=2)
     SigmaE <- rss/sum(m)
     InvS2E <- solve(SigmaE)
     
