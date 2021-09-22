@@ -165,23 +165,13 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
       Xj <- X[ID == j,,drop=FALSE]
       Zj <- Z[ID == j,] 
       Zj <- Zj[,colSums(Zj)>0] 
-      Zjj <- matrix(0,2*nrow(Zj),2*ncol(Zj))
-      for (k in 1:ncol(Zj)){
-        for (r in 1:nrow(Zj)){
-          Zjj[r,2*k-1] <- Zj[r,k]
-          Zjj[nrow(Zj)+r,2*k] <- Zj[r,k]
-        }
-      }
+      Zjj <- kronecker(Zj,diag(1,nrow=K))
       mlist <- c(replicate(1,InvS2Phi,simplify=FALSE),replicate(nperiods[j], InvS2Psi, simplify=FALSE))
       InvS2Zeta <- bdiag_m(mlist)
       residj <- Yj - cbind(Xj%*%beta1, Xj%*%beta2)
-      #ZZt <- crossprod(Zj)
-      #Vj <- solve(InvS2Zeta + m[j]*kronecker(InvS2E, ZZt))
-      Vj <- solve(InvS2Zeta + m[j]*t(Zjj)%*%kronecker(diag(1,nrow=nrow(Xj)),InvS2E)%*%Zjj)
-      r1 <- t(Zj)%*%residj[,1]
-      r2 <- t(Zj)%*%residj[,2]
-      Muj <- Vj %*% rbind(InvS2E[1,1]*r1 + InvS2E[1,2]*r2,
-                              InvS2E[2,1]*r1 + InvS2E[2,2]*r2)
+      residjj <- kronecker(residj[,1],matrix(c(1,0),nrow=K)) + kronecker(residj[,2],matrix(c(0,1),nrow=K))
+      Vj <- solve(InvS2Zeta + t(Zjj)%*%kronecker(diag(1,nrow=nrow(Xj)),InvS2E)%*%Zjj)
+      Muj <- Vj %*% t(Zjj)%*%kronecker(diag(1,nrow=nrow(Xj)),InvS2E)%*%residjj
       Nujj <- Vj + tcrossprod(Muj)
       
       ESSphi1[j,] <- Muj[1:K,]
