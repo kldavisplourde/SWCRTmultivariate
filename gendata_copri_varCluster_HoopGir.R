@@ -2,20 +2,72 @@
 
 ###############################################
 ### function for generating the SW-CRT data ###
+# eff: (delta_1,...,delta_K), the vector of treatment effect for (1st,...,Kth) endpoints
+# time.eff: (beta_11,...,beta_T1,...,beta_1K,...,beta_TK), the vector of time effects for (1st,...,Kth) endpoints
+# vars: (var_1,...,var_K), the vector of marginal variance for (1st,...,Kth) endpoints
+# rho01: a K by K dimensional matrix for the correlation parameters (rho0^k) and (rho1^kk')
+# For rho01: cluster random effect
+#           the diagonal elements correspond to rho0^k's 
+#           the off-diagonal elements correspond to (rho1^kk')'s 
+#           For example, rho01[1,1] corresponds to rho0^1, which is the ICC for the first endpoint
+#                        rho01[1,2] corresponds to rho1^12, which is the correlation of outcomes between subjects on the 1st and 2nd endpoints    
+# rho02: a K by K dimensional matrix for the correlation parameters (rho0^k) and (rho1^kk')
+# For rho02: cluster-period random effect
+#           the diagonal elements correspond to rho0^k's 
+#           the off-diagonal elements correspond to (rho1^kk')'s 
+#           For example, rho02[1,1] corresponds to rho0^1, which is the ICC for the first endpoint
+#                        rho02[1,2] corresponds to rho1^2, which is the correlation of outcomes between subjects on the 1st and 2nd endpoints    
+# rho2: a K by K dimensional matrix for the correlation parameters (rho2^kk')
+# For rho2:
+#           the diagonal elements are 1
+#           the off-diagonal elements correspond to (rho2^kk')'s
+#           For example, rho2[1,2] corresponds to rho2^12, which is the correlation of outcomes within same subject on the 1st and 2nd endpoints    
+# n: number of clusters
+# m: cluster size
+# K: number of endpoints (K=2)
 ###############################################
-#n=15; m=5; K=2; cv=0; sigmac=matrix(c(1,0.01,0.01,1),K); sigmacp=matrix(c(1,0.01,0.01,1),K); sigmae= matrix(c(1,0.01,0.01,1),K); eff=c(1,0.5); time.eff=c(1.1,1.3,1.4,0.9,0.7,0.5)
-datagen_cont <- function(n, m, K, cv, sigmac, sigmacp, sigmae, eff, time.eff ){
+datagen_cont <- function(n, m, K, cv, rho01, rho02, rho2, vars, eff, time.eff ){
   
-  # n -number of clusters
-  # m - cluster size
-  # K - number of multiple co-primary outcomes
-  # cv - cluster size coefficient of variation
-  # sigmac - correlation matrix of random cluster effects
-  # sigmacp - correlation matrix of random cluster-period effects
-  # sigmae - correlation matrix of random errors
-  # eff - a vector of treatment effect sizes 
-  # time.eff - vector of time effects (order is by primary outcome and period)
   library(MASS)
+  
+  #####function to construct covariance matrix Sigma_E for Y_i########
+  rho0k <- diag(rho02)
+  sigmae <- diag((1-rho0k)*vars)
+  for(row in 1:K )
+  {
+    for(col in 1:K)
+    {
+      if(row != col){
+        sigmae[row,col] <- sqrt(vars[row])*sqrt(vars[col])*(rho2[row,col]-rho02[row,col])
+      }
+    }
+  }
+  
+  #####function to construct covariance matrix Sigma_phi for Y_i########
+  rho0k <- diag(rho01)
+  sigmac <- diag(rho0k*vars)
+  for(row in 1:K )
+  {
+    for(col in 1:K)
+    {
+      if(row != col){
+        sigmac[row,col] <- sqrt(vars[row])*sqrt(vars[col])*rho01[row,col]
+      }
+    }
+  }
+  
+  #####function to construct covariance matrix Sigma_psi for Y_i########
+  rho0k <- diag(rho02) - diag(rho01)
+  sigmacp <- diag(rho0k*vars)
+  for(row in 1:K )
+  {
+    for(col in 1:K)
+    {
+      if(row != col){
+        sigmacp[row,col] <- sqrt(vars[row])*sqrt(vars[col])*(rho02[row,col]-rho01[row,col])
+      }
+    }
+  }
   
   DATA<-NULL
   temp<-NULL 
