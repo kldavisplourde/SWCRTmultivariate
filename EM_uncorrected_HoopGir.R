@@ -231,8 +231,8 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
     LLold <- LLnew
     converge = (abs(delta)<=epsilon)
     niter <- niter + 1
-    #if(verbose) cat(paste('iter=',niter),'\t',paste('param.error=',epsilon),'\t',paste('loglik=',LLnew),'\n');
-    if(verbose) cat(paste('iter=',niter),'\t',paste('loglik=',LLnew),'\t',paste('SigmaE=',c(SigmaE[!lower.tri(SigmaE)])),'\n')
+    if(verbose) cat(paste('iter=',niter),'\t',paste('param.error=',epsilon),'\t',paste('loglik=',LLnew),'\n');
+    #if(verbose) cat(paste('iter=',niter),'\t',paste('loglik=',LLnew),'\t',paste('SigmaE=',c(SigmaE[!lower.tri(SigmaE)])),'\n')
     
     #print(niter)
     #print(zeta)
