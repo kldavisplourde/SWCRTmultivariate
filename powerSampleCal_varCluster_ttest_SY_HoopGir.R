@@ -12,7 +12,7 @@ library(mvtnorm)
 #           the off-diagonal elements correspond to (rho1^kk')'s 
 #           For example, rho01[1,1] corresponds to rho0^1, which is the ICC for the first endpoint
 #                        rho01[1,2] corresponds to rho1^12, which is the correlation of outcomes between subjects on the 1st and 2nd endpoints    
-# rho2: a K by K dimensional matrix for the correlation parameters (rho2^kk')
+# rho02: a K by K dimensional matrix for the correlation parameters (rho0^k) and (rho1^kk')
 # For rho02: cluster-period random effect
 #           the diagonal elements correspond to rho0^k's 
 #           the off-diagonal elements correspond to (rho1^kk')'s 
@@ -99,7 +99,8 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
     sigmaP <- constrRiP(rho01,K,vars)
     sigmaPs <- constrRiPs(rho01,rho02,K,vars)
   #Stepped wedge
-    covMatrix <- ((N*t)/(N*t*U-t*W+U^2-N*V))*solve(solve(sigmaPs+(1/m)*sigmaE)+((N*V-U^2)/(N*t*U-t*W+U^2-N*V))*solve(t*sigmaP+sigmaPs+(1/m)*sigmaE))
+    #covMatrix <- ((N*t)/(N*t*U-t*W+U^2-N*V))*solve(solve(sigmaPs+(1/m)*sigmaE)+((N*V-U^2)/(N*t*U-t*W+U^2-N*V))*solve(t*sigmaP+sigmaPs+(1/m)*sigmaE))
+    covMatrix <- N*t*solve((N*t*U-t*W+U^2-N*V)*solve(sigmaPs +(1/m)*sigmaE)-(U^2-N*V)*solve(t*sigmaP+sigmaPs+(1/m)*sigmaE))
     return(covMatrix)  
   }
   
@@ -127,49 +128,19 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
   pred.power.t <- pmvt(lower = rep(criticalValue.t,K),upper=rep(Inf,K),df = (N-2*K), sigma = wCor,delta=meanVector)[1]
   pred.power.n <- pmvnorm(lower = rep(criticalValue.n,K),upper=rep(Inf,K), sigma = wCor,mean=meanVector)[1]
   
-  param <- list(vard=c(sigmaks.sq),pred.power.t=pred.power.t,pred.power.n=pred.power.n)
+  param <- list(vard=c(sigmaks.sq),pred.power.t=pred.power.t,pred.power.z=pred.power.n)
   return(param)
 }
 
 #Sim Study Development
 rho2<-matrix(c(1,0.2,0.2,1),2)
-  rho02<-matrix(c(0.02,0.01,0.01,0.02),2);rho01<-matrix(c(0.01,0.005,0.005,0.01),2);deltas<-c(0.42,0.28);t<-3;N=(t-1)*4;m<-82
-  #rho01<-matrix(c(0.01,0.005,0.005,0.05),2);deltas<-c(0.25,0.35);t<-5;N=(t-1)*2;m<-50
-  #rho01<-matrix(c(0.01,0.005,0.005,0.1),2);deltas<-c(0.22,0.50);t<-4;N=(t-1)*3;m<-68
+  rho02<-matrix(c(0.02,0.01,0.01,0.02),2);rho01<-matrix(c(0.01,0.005,0.005,0.01),2);deltas<-c(0.4,0.3);t<-4;N=(t-1)*3;m<-50
   
-  #rho01<-matrix(c(0.05,0.005,0.005,0.01),2);deltas<-c(0.33,0.31);t<-5;N=(t-1)*2;m<-37
-  #rho01<-matrix(c(0.05,0.025,0.025,0.05),2);deltas<-c(0.47,0.34);t<-4;N=(t-1)*4;m<-20
-  #rho01<-matrix(c(0.05,0.025,0.025,0.1),2);deltas<-c(0.26,0.50);t<-3;N=(t-1)*6;m<-55
-  
-  #rho01<-matrix(c(0.1,0.005,0.005,0.01),2);deltas<-c(0.45,0.1);t<-5;N=(t-1)*5;m<-85
-  #rho01<-matrix(c(0.1,0.025,0.025,0.05),2);deltas<-c(0.49,0.42);t<-3;N=(t-1)*5;m<-29
-  #rho01<-matrix(c(0.1,0.05,0.05,0.1),2);deltas<-c(0.29,0.44);t<-4;N=(t-1)*4;m<-26
-  
-#rho2<-matrix(c(1,0.5,0.5,1),2)
-  #rho01<-matrix(c(0.01,0.005,0.005,0.01),2);deltas<-c(0.13,0.26);t<-4;N=(t-1)*5;m<-95
-  #rho01<-matrix(c(0.01,0.005,0.005,0.05),2);deltas<-c(0.17,0.32);t<-3;N=(t-1)*8;m<-92
-  #rho01<-matrix(c(0.01,0.005,0.005,0.1),2);deltas<-c(0.24,0.41);t<-5;N=(t-1)*5;m<-12
-  
-  #rho01<-matrix(c(0.05,0.005,0.005,0.01),2);deltas<-c(0.43,0.3);t<-4;N=(t-1)*7;m<-10
-  #rho01<-matrix(c(0.05,0.025,0.025,0.05),2);deltas<-c(0.22,0.29);t<-5;N=(t-1)*4;m<-25
-  #rho01<-matrix(c(0.05,0.025,0.025,0.1),2);deltas<-c(0.15,0.5);t<-3;N=(t-1)*11;m<-83
-  
-  #rho01<-matrix(c(0.1,0.005,0.005,0.01),2);deltas<-c(0.46,0.19);t<-3;N=(t-1)*13;m<-40
-  #rho01<-matrix(c(0.1,0.025,0.025,0.05),2);deltas<-c(0.5,0.1);t<-4;N=(t-1)*9;m<-88
-  #rho01<-matrix(c(0.1,0.05,0.05,0.1),2);deltas<-c(0.28,0.38);t<-5;N=(t-1)*6;m<-8
+rho2<-matrix(c(1,0.5,0.5,1),2)
+  rho02<-matrix(c(0.1,0.05,0.05,0.1),2);rho01<-matrix(c(0.05,0.025,0.025,0.05),2);deltas<-c(0.5,0.5);t<-4;N=(t-1)*4;m<-20
 
-#rho2<-matrix(c(1,0.8,0.8,1),2)
-  #rho01<-matrix(c(0.01,0.005,0.005,0.01),2);deltas<-c(0.2,0.11);t<-5;N=(t-1)*4;m<-89
-  #rho01<-matrix(c(0.01,0.005,0.005,0.05),2);deltas<-c(0.37,0.41);t<-3;N=(t-1)*15;m<-8
-  #rho01<-matrix(c(0.01,0.005,0.005,0.1),2);deltas<-c(0.35,0.4);t<-4;N=(t-1)*10;m<-5
-  
-  #rho01<-matrix(c(0.05,0.005,0.005,0.01),2);deltas<-c(0.1,0.1);t<-5;N=(t-1)*5;m<-100
-  #rho01<-matrix(c(0.05,0.025,0.025,0.05),2);deltas<-c(0.5,0.5);t<-3;N=(t-1)*5;m<-22
-  #rho01<-matrix(c(0.05,0.025,0.025,0.1),2);deltas<-c(0.27,0.36);t<-4;N=(t-1)*6;m<-18
-  
-  #rho01<-matrix(c(0.1,0.005,0.005,0.01),2);deltas<-c(0.41,0.15);t<-3;N=(t-1)*14;m<-60
-  #rho01<-matrix(c(0.1,0.025,0.025,0.05),2);deltas<-c(0.49,0.23);t<-4;N=(t-1)*8;m<-17
-  #rho01<-matrix(c(0.1,0.05,0.05,0.1),2);deltas<-c(0.32,0.23);t<-5;N=(t-1)*2;m<-56
+rho2<-matrix(c(1,0.8,0.8,1),2)
+  rho02<-matrix(c(0.3,0.075,0.075,0.15),2);rho01<-matrix(c(0.1,0.025,0.025,0.05),2);deltas<-c(0.6,0.7);t<-3;N=(t-1)*10;m<-60
   
 calPower_IU(deltas,margins=c(0,0),vars=c(1,1),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
 
@@ -188,7 +159,7 @@ for(k in 1:27){
   
   pred<-calPower_IU(deltas,margins=c(0,0),vars=c(1,1),rho01,rho2,N,t,m,K=2,alpha=0.05)
   
-  power.k <-cbind(pred$pred.power.t,pred$pred.power.n)
+  power.k <-cbind(pred$pred.power.t,pred$pred.power.z)
   
   power<-rbind(power,power.k)
 }
