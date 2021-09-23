@@ -1,36 +1,152 @@
 library(lme4)
 #library(nlme)
-library(foreach)
-#set.seed(3628) #1000 iterations
-set.seed(5792) #10000 iterations
+library(doMC)
+library(doRNG)
+library(lmeInfo)
 
-#simData <- foreach(i=1:1000, .combine=rbind) %do% {
-simData <- NULL
-for(i in 1:300){
-  dt<-datagen_cont(n=20, m=15, K=2, cv=0, sigmac=matrix(c(1,0.1,0.1,1),2), sigmacp=matrix(c(1,0.2,0.2,1),2), sigmae= matrix(c(1,0.5,0.5,1),2), eff=c(0.3,0.5), time.eff=c(1.1,1.3,1.1,1.3))$short
+setwd("/Users/kdavis07/Documents/GitHub/CoPrimarySWCRT")
+source("gendata_copri_varCluster_HoopGir.R")
+source("EM_uncorrected_HoopGir.R")
 
-  lme1<-lmer(out1~time.1+time.2+arm +(1|cluster) +(1|cluster.period),data=dt)
-  lme2<-lmer(out2~time.1+time.2+arm +(1|cluster) +(1|cluster.period),data=dt)
-  #lme2<-lme(out2~time.1+time.2+time.3+arm,random=~1|cluster,data=dt,control=lmeControl(returnObject=TRUE))
-  #formula1=formula(lme1)
-  #formula2=formula(lme2)
+args<-commandArgs(trailingOnly = TRUE)
+k<-as.integer(args[1])
+if (is.na(k)) k <- 1
+paste("Scenario:",k)
 
-  fitEM<-EM.estim(dt,lme1,lme2,cluster="cluster",cluster.period="cluster.period",verbose=FALSE)
+ncores<-as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK",1))
+if (is.na(ncores)) ncores<-1
+registerDoMC(cores=ncores)
 
-  betas<-fitEM$theta$zeta
-  SigmaE<-c(fitEM$theta$SigmaE[!lower.tri(fitEM$theta$SigmaE)])
-  SigmaPhi<-c(fitEM$theta$SigmaPhi[!lower.tri(fitEM$theta$SigmaPhi)])
-  SigmaPsi<-c(fitEM$theta$SigmaPsi[!lower.tri(fitEM$theta$SigmaPsi)])
-  iter<-fitEM$iter
+# define scenarios
+scenarios <- read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/Sim_Params.txt", header=TRUE, sep="")
+scenarios <- subset(scenarios, scenario == k)
+
+scenario <- k
+t <- scenarios$t
+N <- scenarios$N
+cs <- scenarios$m
+eff<-c(scenarios$delta1,scenarios$delta2)
+rho01<-matrix(c(scenarios$rho01.11,scenarios$rho01.12,scenarios$rho01.12,scenarios$rho01.22),2)
+rho02<-matrix(c(scenarios$rho02.11,scenarios$rho02.12,scenarios$rho02.12,scenarios$rho02.22),2)
+rho2<-matrix(c(1,scenarios$rho2.12,scenarios$rho2.12,1),2)
+vars<-c(1,1) #c(scenarios$var1,scenarios$var2)
+bs <- 0
+beta <- cumsum(c(0.1,0.1*0.5,0.1*(0.5^2),0.1*(0.5^3),0.1*(0.5^4),0.1*(0.5^5)))[1:t-1]
+nsim<-2
+
+set.seed(3826+k)
+fail_count <- 0
+max_fail <- 200
+
+simData <- naive.simData <- NULL
+# Loop Index
+i<-0
+# While Loop (discarding false data)
+while(i<nsim){
+  i<-i+1
+  itemp<-i
   
-  simData.i <- c(betas,SigmaPhi,SigmaPsi,SigmaE,iter)
-  simData <- rbind(simData, simData.i)
+  dt<-datagen_cont(n=N, m=cs, K=2, cv=0, rho01=rho01, rho02=rho02, rho2=rho2, vars=vars, eff=eff, time.eff=c(beta,beta))
+  data<-dt$short
+
+  if(t==3){
+    lme1<-lmer(out1~time.1+time.2+arm +(1|cluster) +(1|cluster.period),data=dt)
+    lme2<-lmer(out2~time.1+time.2+arm +(1|cluster) +(1|cluster.period),data=dt)
+  }
+  
+  if(t==4){
+    lme1<-lmer(out1~time.1+time.2+time.3+arm +(1|cluster) +(1|cluster.period),data=dt)
+    lme2<-lmer(out2~time.1+time.2+time.3+arm +(1|cluster) +(1|cluster.period),data=dt)
+  }
+  
+  if(t==5){
+    lme1<-lmer(out1~time.1+time.2+time.3+time.4+arm +(1|cluster) +(1|cluster.period),data=dt)
+    lme2<-lmer(out2~time.1+time.2+time.3+time.4+arm +(1|cluster) +(1|cluster.period),data=dt)
+  }
+  
+  param<-try(EM.estim(data,lme1,lme2,cluster="cluster",cluster.period="cluster.period",maxiter=500, epsilon=1e-4, verbose=FALSE))
+  if(param$SEcheck=="ERROR"|anyNA(param$theta$zeta)==TRUE|anyNA(param$theta$SigmaE)==TRUE|anyNA(param$theta$SigmaPhi)==TRUE|anyNA(param$theta$SigmaPsi)==TRUE){i<- i-1;fail_count <-fail_count+1}
+  if(fail_count > max_fail){break}
+  if(i<itemp){next}
+  
+  results.i<- c(param$theta$zeta,param$theta$SigmaPhi[!lower.tri(param$theta$SigmaPhi)],param$theta$SigmaPsi[!lower.tri(param$theta$SigmaPsi)],param$theta$SigmaE[!lower.tri(param$theta$SigmaE)],param$SEtheta)
+  
+  # From individual models (not taking into account between-outcome within-subject correlation)
+  naive.zeta <- as.numeric(c(fixef(lme1), fixef(lme2)))
+  
+  vc1<-as.data.frame(VarCorr(lme1))
+  vc2<-as.data.frame(VarCorr(lme2))
+  naive.SigmaPhi <- c(vc1[vc1$grp=="cluster",4],vc2[vc2$grp=="cluster",4])
+  naive.SigmaPsi <- c(vc1[vc1$grp=="cluster.period",4],vc2[vc2$grp=="cluster.period",4])
+  naive.SigmaE <- c(vc1[vc1$grp=="Residual",4],vc2[vc2$grp=="Residual",4])
+  
+  naive.SE <- as.numeric(c(sqrt(diag(vcov(lme1))),sqrt(diag(vcov(lme2))))) # add SE for random effects?
+
+  naive.i<-c(naive.zeta,naive.SigmaPhi,naive.SigmaPsi,naive.SigmaE,naive.SE)
+  
+  # combining results
+  simData<-rbind(simData,results.i)
+  naive.simData<-rbind(naive.simData,naive.i)
 }
 
-colnames(simData)<-c("Intercept.est1","Time1.est1","Time2.est1","Treatment.est1",
-                     "Intercept.est2","Time1.est2","Time2.est2","Treatment.est2",
-                     "SigmaPhi11","SigmaPhi12","SigmaPhi22","SigmaPsi11","SigmaPsi12","SigmaPsi22",
-                     "SigmaE11","SigmaE12","SigmaE22","EM.iter")
+if(t==3){
+  colnames(simData)<-c("Intercept.est1","Period2.est1","Period3.est1","Treatment.est1",
+                       "Intercept.est2","Period2.est2","Period3.est2","Treatment.est2",
+                       "SigmaPhi11","SigmaPhi12","SigmaPhi22",
+                       "SigmaPsi11","SigmaPsi12","SigmaPsi22","SigmaE11","SigmaE12","SigmaE22",
+                       "Intercept.se1","Period2.se1","Period3.se1","Treatment.se1",
+                       "Intercept.se2","Period2.se2","Period3.se2","Treatment.se2",
+                       "SigmaPhi11.se","SigmaPhi12.se","SigmaPhi22.se",
+                       "SigmaPsi11.se","SigmaPsi12.se","SigmaPsi22.se","SigmaE11.se","SigmaE12.se","SigmaE22.se")
+  
+  colnames(naive.simData)<-c("Intercept.est1","Period2.est1","Period3.est1","Treatment.est1",
+                             "Intercept.est2","Period2.est2","Period3.est2","Treatment.est2",
+                             "SigmaPhi11","SigmaPhi22","SigmaE11","SigmaE22",
+                             "Intercept.se1","Period2.se1","Period3.se1","Treatment.se1",
+                             "Intercept.se2","Period2.se2","Period3.se2","Treatment.se2",
+                             "SigmaPhi11.se","SigmaE11.se","SigmaPhi22.se","SigmaE22.se")
+}
+
+if(t==4){
+  colnames(simData)<-c("Intercept.est1","Period2.est1","Period3.est1","Period4.est1","Treatment.est1",
+                       "Intercept.est2","Period2.est2","Period3.est2","Period4.est2","Treatment.est2",
+                       "SigmaPhi11","SigmaPhi12","SigmaPhi22",
+                       "SigmaPsi11","SigmaPsi12","SigmaPsi22","SigmaE11","SigmaE12","SigmaE22",
+                       "Intercept.se1","Period2.se1","Period3.se1","Period4.se1","Treatment.se1",
+                       "Intercept.se2","Period2.se2","Period3.se2","Period4.se2","Treatment.se2",
+                       "SigmaPhi11.se","SigmaPhi12.se","SigmaPhi22.se",
+                       "SigmaPsi11.se","SigmaPsi12.se","SigmaPsi22.se","SigmaE11.se","SigmaE12.se","SigmaE22.se")
+  
+  colnames(naive.simData)<-c("Intercept.est1","Period2.est1","Period3.est1","Period4.est1","Treatment.est1",
+                             "Intercept.est2","Period2.est2","Period3.est2","Period4.est2","Treatment.est2",
+                             "SigmaPhi11","SigmaPhi22","SigmaE11","SigmaE22",
+                             "Intercept.se1","Period2.se1","Period3.se1","Period4.se1","Treatment.se1",
+                             "Intercept.se2","Period2.se2","Period3.se2","Period4.se2","Treatment.se2")
+}
+
+if(t==5){
+  colnames(simData)<-c("Intercept.est1","Period2.est1","Period3.est1","Period4.est1","Period5.est1","Treatment.est1",
+                       "Intercept.est2","Period2.est2","Period3.est2","Period4.est2","Period5.est2","Treatment.est2",
+                       "SigmaPhi11","SigmaPhi12","SigmaPhi22",
+                       "SigmaPsi11","SigmaPsi12","SigmaPsi22","SigmaE11","SigmaE12","SigmaE22",
+                       "Intercept.se1","Period2.se1","Period3.se1","Period4.se1","Period5.se1","Treatment.se1",
+                       "Intercept.se2","Period2.se2","Period3.se2","Period4.se2","Period5.se2","Treatment.se2",
+                       "SigmaPhi11.se","SigmaPhi12.se","SigmaPhi22.se",
+                       "SigmaPsi11.se","SigmaPsi12.se","SigmaPsi22.se","SigmaE11.se","SigmaE12.se","SigmaE22.se")
+  
+  colnames(naive.simData)<-c("Intercept.est1","Period2.est1","Period3.est1","Period4.est1","Period5.est1","Treatment.est1",
+                             "Intercept.est2","Period2.est2","Period3.est2","Period4.est2","Period5.est2","Treatment.est2",
+                             "SigmaPhi11","SigmaPhi22","SigmaE11","SigmaE22",
+                             "Intercept.se1","Period2.se1","Period3.se1","Period4.se1","Period5.se1","Treatment.se1",
+                             "Intercept.se2","Period2.se2","Period3.se2","Period4.se2","Period5.se2","Treatment.se2")
+}
+
+if(sum(eff)==0) analysis<-"error"
+if(sum(eff) != 0) analysis<-"power"
 
 simData <- as.data.frame(simData)
-write.table(simData, file="/Users/kdavis07/Desktop/test.EM.HoopGir1.txt", sep="\t", row.names=F)
+naive.simData <- as.data.frame(naive.simData)
+
+write.table(simData, file=paste("results/UncorrectedResults_",analysis,"_scenario",scenario,".txt",sep=""), sep="\t", row.names=F)
+write.table(naive.simData, file=paste("results/NaiveResults_",analysis,"_scenario",scenario,".txt",sep=""), sep="\t", row.names=F)
+#write.table(simData, file=paste("results/CorrectedResults_",analysis,"_scenario",scenario,".txt",sep=""), sep="\t", row.names=F)
