@@ -109,7 +109,7 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho2,N,t,m,K,alpha)
   pred.power.t <- pmvt(lower = rep(criticalValue.t,K),upper=rep(Inf,K),df = (N-2*K), sigma = wCor,delta=meanVector)[1]
   pred.power.n <- pmvnorm(lower = rep(criticalValue.n,K),upper=rep(Inf,K), sigma = wCor,mean=meanVector)[1]
   
-  param <- list(vard=c(sigmaks.sq),pred.power.t=pred.power.t,pred.power.n=pred.power.n)
+  param <- list(vard=c(sigmaks.sq),pred.power.t=pred.power.t,pred.power.z=pred.power.n)
   return(param)
 }
 
@@ -177,7 +177,7 @@ for(k in 1:27){
   
   pred<-calPower_IU(deltas,margins=c(0,0),vars=c(1,1),rho01,rho2,N,t,m,K=2,alpha=0.05)
   
-  power.k <-cbind(pred$pred.power.t,pred$pred.power.n)
+  power.k <-cbind(pred$pred.power.t,pred$pred.power.z)
   
   power<-rbind(power,power.k)
 }
