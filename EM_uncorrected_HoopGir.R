@@ -240,8 +240,20 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
     #print(SigmaE)
     #print(LLnew)
   }
-  param <- list(theta=list(zeta=zeta,SigmaE=SigmaE,SigmaPhi=SigmaPhi,SigmaPsi=SigmaPsi),loglik=LLnew,eps=epsilon,iter=niter)
-  return(param) 
+  
+  Vtheta <- matrix(NA,length(thetah),length(thetah))
+  try(Vtheta <- solve(-hessian(loglik,thetah))) #, silent = TRUE
+  SEcheck <- "GOOD"
+  if(anyNA(Vtheta)==TRUE|min(diag(Vtheta))<0) SEcheck <- "ERROR"
+  #Vtheta = try(solve(-hessian(loglik,thetah)))
+  #SEtheta = sqrt(diag(Vtheta))
+  #if(class(Vtheta)=="try-error"){i<- i-1; fail_count <- fail_count+1}
+  #if(i<itemp){next}
+  #if(fail_count > max_fail){break}
+  #SEtheta = rbind(SEtheta, sqrt(diag(Vtheta)))
+  
+  param <- list(theta=list(zeta=zeta,SigmaE=SigmaE,SigmaPhi=SigmaPhi,SigmaPsi=SigmaPsi),loglik=LLnew,eps=epsilon,iter=niter,
+                Vtheta=Vtheta,SEcheck=SEcheck) #SEtheta=SEtheta,
 }
 
 
