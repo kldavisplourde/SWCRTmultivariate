@@ -68,7 +68,8 @@ while(i<nsim){
   if(fail_count > max_fail){break}
   if(i<itemp){next}
   
-  results.i<- c(param$theta$zeta,c(param$theta$SigmaPhi[!lower.tri(param$theta$SigmaPhi)]),param$theta$SigmaE[!lower.tri(param$theta$SigmaE)],param$SEtheta)
+  SEtheta.i<-sqrt(diag(param$Vtheta))
+  results.i<- c(param$theta$zeta,c(param$theta$SigmaPhi[!lower.tri(param$theta$SigmaPhi)]),param$theta$SigmaE[!lower.tri(param$theta$SigmaE)],SEtheta.i)
   
   # From individual models (not taking into account between-outcome within-subject correlation)
   naive.zeta <- as.numeric(c(lme1$coefficients$fixed, lme2$coefficients$fixed))
