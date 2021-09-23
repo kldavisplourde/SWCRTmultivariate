@@ -50,18 +50,18 @@ while(i<nsim){
   data<-dt$short
 
   if(t==3){
-    lme1<-lmer(out1~time.1+time.2+arm +(1|cluster) +(1|cluster.period),data=dt)
-    lme2<-lmer(out2~time.1+time.2+arm +(1|cluster) +(1|cluster.period),data=dt)
+    lme1<-lmer(out1~time.1+time.2+arm +(1|cluster) +(1|cluster.period),data=data)
+    lme2<-lmer(out2~time.1+time.2+arm +(1|cluster) +(1|cluster.period),data=data)
   }
   
   if(t==4){
-    lme1<-lmer(out1~time.1+time.2+time.3+arm +(1|cluster) +(1|cluster.period),data=dt)
-    lme2<-lmer(out2~time.1+time.2+time.3+arm +(1|cluster) +(1|cluster.period),data=dt)
+    lme1<-lmer(out1~time.1+time.2+time.3+arm +(1|cluster) +(1|cluster.period),data=data)
+    lme2<-lmer(out2~time.1+time.2+time.3+arm +(1|cluster) +(1|cluster.period),data=data)
   }
   
   if(t==5){
-    lme1<-lmer(out1~time.1+time.2+time.3+time.4+arm +(1|cluster) +(1|cluster.period),data=dt)
-    lme2<-lmer(out2~time.1+time.2+time.3+time.4+arm +(1|cluster) +(1|cluster.period),data=dt)
+    lme1<-lmer(out1~time.1+time.2+time.3+time.4+arm +(1|cluster) +(1|cluster.period),data=data)
+    lme2<-lmer(out2~time.1+time.2+time.3+time.4+arm +(1|cluster) +(1|cluster.period),data=data)
   }
   
   param<-try(EM.estim(data,lme1,lme2,cluster="cluster",cluster.period="cluster.period",maxiter=500, epsilon=1e-4, verbose=FALSE))
