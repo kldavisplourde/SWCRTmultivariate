@@ -18,7 +18,7 @@ if (is.na(ncores)) ncores<-1
 registerDoMC(cores=ncores)
 
 # define scenarios
-scenarios <- read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/Sim_Params.txt", header=TRUE, sep="")
+scenarios <- read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/HoopGir/Preliminary/Prelim_Sim_params_HoopGir.txt", header=TRUE, sep="")
 scenarios <- subset(scenarios, scenario == k)
 
 scenario <- k
@@ -69,7 +69,8 @@ while(i<nsim){
   if(fail_count > max_fail){break}
   if(i<itemp){next}
   
-  results.i<- c(param$theta$zeta,param$theta$SigmaPhi[!lower.tri(param$theta$SigmaPhi)],param$theta$SigmaPsi[!lower.tri(param$theta$SigmaPsi)],param$theta$SigmaE[!lower.tri(param$theta$SigmaE)],param$SEtheta)
+  SEtheta.i<-sqrt(diag(param$Vtheta))
+  results.i<- c(param$theta$zeta,param$theta$SigmaPhi[!lower.tri(param$theta$SigmaPhi)],param$theta$SigmaPsi[!lower.tri(param$theta$SigmaPsi)],param$theta$SigmaE[!lower.tri(param$theta$SigmaE)],SEtheta.i)
   
   # From individual models (not taking into account between-outcome within-subject correlation)
   naive.zeta <- as.numeric(c(fixef(lme1), fixef(lme2)))
@@ -101,10 +102,9 @@ if(t==3){
   
   colnames(naive.simData)<-c("Intercept.est1","Period2.est1","Period3.est1","Treatment.est1",
                              "Intercept.est2","Period2.est2","Period3.est2","Treatment.est2",
-                             "SigmaPhi11","SigmaPhi22","SigmaE11","SigmaE22",
+                             "SigmaPhi11","SigmaPhi22","SigmaPsi11","SigmaPsi22","SigmaE11","SigmaE22",
                              "Intercept.se1","Period2.se1","Period3.se1","Treatment.se1",
-                             "Intercept.se2","Period2.se2","Period3.se2","Treatment.se2",
-                             "SigmaPhi11.se","SigmaE11.se","SigmaPhi22.se","SigmaE22.se")
+                             "Intercept.se2","Period2.se2","Period3.se2","Treatment.se2")
 }
 
 if(t==4){
@@ -119,7 +119,7 @@ if(t==4){
   
   colnames(naive.simData)<-c("Intercept.est1","Period2.est1","Period3.est1","Period4.est1","Treatment.est1",
                              "Intercept.est2","Period2.est2","Period3.est2","Period4.est2","Treatment.est2",
-                             "SigmaPhi11","SigmaPhi22","SigmaE11","SigmaE22",
+                             "SigmaPhi11","SigmaPhi22","SigmaPsi11","SigmaPsi22","SigmaE11","SigmaE22",
                              "Intercept.se1","Period2.se1","Period3.se1","Period4.se1","Treatment.se1",
                              "Intercept.se2","Period2.se2","Period3.se2","Period4.se2","Treatment.se2")
 }
@@ -136,7 +136,7 @@ if(t==5){
   
   colnames(naive.simData)<-c("Intercept.est1","Period2.est1","Period3.est1","Period4.est1","Period5.est1","Treatment.est1",
                              "Intercept.est2","Period2.est2","Period3.est2","Period4.est2","Period5.est2","Treatment.est2",
-                             "SigmaPhi11","SigmaPhi22","SigmaE11","SigmaE22",
+                             "SigmaPhi11","SigmaPhi22","SigmaPsi11","SigmaPsi22","SigmaE11","SigmaE22",
                              "Intercept.se1","Period2.se1","Period3.se1","Period4.se1","Period5.se1","Treatment.se1",
                              "Intercept.se2","Period2.se2","Period3.se2","Period4.se2","Period5.se2","Treatment.se2")
 }
