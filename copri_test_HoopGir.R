@@ -4,8 +4,10 @@ library(foreach)
 #set.seed(3628) #1000 iterations
 set.seed(5792) #10000 iterations
 
-simData <- foreach(i=1:1000, .combine=rbind) %do% {
-  dt<-datagen_cont(n=4, m=5, K=2, cv=0, sigmac=matrix(c(1,0.12,0.12,1),2), sigmacp=matrix(c(1,0.18,0.18,1),2), sigmae= matrix(c(2.3,0.1,0.1,2.5),2), eff=c(1.2,0.5), time.eff=c(1.1,1.3,0.9,0.7))$short
+#simData <- foreach(i=1:1000, .combine=rbind) %do% {
+simData <- NULL
+for(i in 1:300){
+  dt<-datagen_cont(n=20, m=15, K=2, cv=0, sigmac=matrix(c(1,0.1,0.1,1),2), sigmacp=matrix(c(1,0.2,0.2,1),2), sigmae= matrix(c(1,0.5,0.5,1),2), eff=c(0.3,0.5), time.eff=c(1.1,1.3,1.1,1.3))$short
 
   lme1<-lmer(out1~time.1+time.2+arm +(1|cluster) +(1|cluster.period),data=dt)
   lme2<-lmer(out2~time.1+time.2+arm +(1|cluster) +(1|cluster.period),data=dt)
@@ -13,7 +15,7 @@ simData <- foreach(i=1:1000, .combine=rbind) %do% {
   #formula1=formula(lme1)
   #formula2=formula(lme2)
 
-  fitEM<-EM.estim(dt,lme1,lme2,cluster="cluster",cluster.period="cluster.period",verbose=TRUE)
+  fitEM<-EM.estim(dt,lme1,lme2,cluster="cluster",cluster.period="cluster.period",verbose=FALSE)
 
   betas<-fitEM$theta$zeta
   SigmaE<-c(fitEM$theta$SigmaE[!lower.tri(fitEM$theta$SigmaE)])
@@ -21,11 +23,12 @@ simData <- foreach(i=1:1000, .combine=rbind) %do% {
   SigmaPsi<-c(fitEM$theta$SigmaPsi[!lower.tri(fitEM$theta$SigmaPsi)])
   iter<-fitEM$iter
   
-  c(betas,SigmaPhi,SigmaPsi,SigmaE,iter)
+  simData.i <- c(betas,SigmaPhi,SigmaPsi,SigmaE,iter)
+  simData <- rbind(simData, simData.i)
 }
 
-colnames(simData)<-c("Intercept.est1","Time1.est1","Time2.est1","Time3.est1","Treatment.est1",
-                     "Intercept.est2","Time1.est2","Time2.est2","Time3.est2","Treatment.est2",
+colnames(simData)<-c("Intercept.est1","Time1.est1","Time2.est1","Treatment.est1",
+                     "Intercept.est2","Time1.est2","Time2.est2","Treatment.est2",
                      "SigmaPhi11","SigmaPhi12","SigmaPhi22","SigmaPsi11","SigmaPsi12","SigmaPsi22",
                      "SigmaE11","SigmaE12","SigmaE22","EM.iter")
 
