@@ -37,18 +37,18 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
   
   vc1<-as.data.frame(VarCorr(fm1))
   vc2<-as.data.frame(VarCorr(fm2))
-  s2phi1 <- vc1[vc1$grp==paste(cluster),4]
-  s2phi2 <- vc2[vc2$grp==paste(cluster),4]
+  s2phi1 <- ifelse(vc1[vc1$grp==paste(cluster),4]==0,0.01,vc1[vc1$grp==paste(cluster),4])
+  s2phi2 <- ifelse(vc2[vc2$grp==paste(cluster),4]==0,0.01,vc2[vc2$grp==paste(cluster),4])
   SigmaPhi <- diag(c(s2phi1, s2phi2))
   InvS2Phi <- solve(SigmaPhi)
   
-  s2psi1 <- vc1[vc1$grp==paste(cluster.period),4]
-  s2psi2 <- vc2[vc2$grp==paste(cluster.period),4]
+  s2psi1 <- ifelse(vc1[vc1$grp==paste(cluster.period),4]==0,0.01,vc1[vc1$grp==paste(cluster.period),4])
+  s2psi2 <- ifelse(vc2[vc2$grp==paste(cluster.period),4]==0,0.01,vc2[vc2$grp==paste(cluster.period),4])
   SigmaPsi <- diag(c(s2psi1, s2psi2))
   InvS2Psi <- solve(SigmaPsi)
   
-  s2e1 <- vc1[vc1$grp=="Residual",4]
-  s2e2 <- vc2[vc2$grp=="Residual",4]
+  s2e1 <- ifelse(vc1[vc1$grp=="Residual",4]==0,0.01,vc1[vc1$grp=="Residual",4])
+  s2e2 <- ifelse(vc2[vc2$grp=="Residual",4]==0,0.01,vc2[vc2$grp=="Residual",4])
   SigmaE <- diag(c(s2e1, s2e2))
   InvS2E <- solve(SigmaE)
   
