@@ -142,7 +142,7 @@ rho2<-matrix(c(1,0.5,0.5,1),2)
 rho2<-matrix(c(1,0.8,0.8,1),2)
   rho02<-matrix(c(0.3,0.075,0.075,0.15),2);rho01<-matrix(c(0.1,0.025,0.025,0.05),2);deltas<-c(0.6,0.7);t<-3;N=(t-1)*10;m<-60
   
-calPower_IU(deltas,margins=c(0,0),vars=c(1,1),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+calPower_IU(deltas,margins=c(0,0),vars=c(2,2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
 
 #check
 scenarios<-read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/Sim_Params.txt", header=TRUE, sep="")
