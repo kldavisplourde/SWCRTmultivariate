@@ -6,51 +6,87 @@ library(mvtnorm)
 library(numDeriv)
 
 # function to perform EM estimation with K=2 outcomes
-EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
+EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=1e-4
                      , verbose=FALSE){
   # fit mixed model to initialize parameters
-  #fm1 <- lme(formula1, random = ~ 1|cluster, data=data)
-  #fm2 <- lme(formula2, random = ~ 1|cluster, data=data)
+  #fm1 <- lme(formula1, random = ~ 1|cluster, data=data,control=lmeControl(returnObject=TRUE))
+  #fm2 <- lme(formula2, random = ~ 1|cluster, data=data,control=lmeControl(returnObject=TRUE))
   K <- 2
-  zeta <- as.numeric(c(fm1$coefficients$fixed, fm2$coefficients$fixed))
-  #beta1 = zeta[1:2]
-  #beta2 = zeta[3:4]
-  beta1 = as.numeric(fm1$coefficients$fixed)
-  beta2 = as.numeric(fm2$coefficients$fixed)
-  if (length(as.numeric(fm1$coefficients$fixed)) != length(as.numeric(fm2$coefficients$fixed)))
+  zeta <- as.numeric(c(fixef(fm1), fixef(fm2)))
+  beta1 = as.numeric(fixef(fm1))
+  beta2 = as.numeric(fixef(fm2))
+  if (length(beta1) != length(beta2))
     stop("\nnumber of covariates do not match between endpoints.")
-  nvar<-length(as.numeric(fm1$coefficients$fixed))
-  TermsX1 <- fm1$terms
-  TermsX2 <- fm2$terms
+  nvar<-length(beta1)
+  TermsX1 <- terms(fm1)
+  TermsX2 <- terms(fm2)
   mfX1 <- model.frame(TermsX1, data = data)[,-1]
   mfX2 <- model.frame(TermsX2, data = data)[,-1]
   if (identical(mfX1,mfX2) == FALSE)
     stop("\ncovariates do not match between endpoints.")
+  # Z matrix
+  bar.f <- findbars(formula(fm1)) # Identify random effect terms (find |)
+  mf <- model.frame(subbars(fm1),data=data) # Replaces | with +
+  Z <- t(mkReTrms(bar.f,mf,reorder.terms=FALSE)$Zt) # phi=(b_{11},b_{12},...,b_{I1},b_{I2},s_{111},s_{112},...,s_{1T1},s_{1T2},s_{I11},...,s_{IT2})'
   ##
   
-  #m <- as.numeric(table(data$cluster))
-  m <- as.numeric(table(fm1$groups[[1]]))
+  # vector of cluster sizes and cluster-period sizes
+  m <- table(data[, paste(cluster)])
+  mp <- table(data[, paste(cluster.period)])
   
-  s2phi1 <- VarCorr(fm1)[1,1]
-  s2phi2 <- VarCorr(fm2)[1,1]
+  vc1<-as.data.frame(VarCorr(fm1))
+  vc2<-as.data.frame(VarCorr(fm2))
+  s2phi1 <- ifelse(vc1[vc1$grp==paste(cluster),4]==0,0.01,vc1[vc1$grp==paste(cluster),4])
+  s2phi2 <- ifelse(vc2[vc2$grp==paste(cluster),4]==0,0.01,vc2[vc2$grp==paste(cluster),4])
   SigmaPhi <- diag(c(s2phi1, s2phi2))
   InvS2Phi <- solve(SigmaPhi)
   
-  s2e1 <- VarCorr(fm1)[2,1]
-  s2e2 <- VarCorr(fm2)[2,1]
+  s2psi1 <- ifelse(vc1[vc1$grp==paste(cluster.period),4]==0,0.01,vc1[vc1$grp==paste(cluster.period),4])
+  s2psi2 <- ifelse(vc2[vc2$grp==paste(cluster.period),4]==0,0.01,vc2[vc2$grp==paste(cluster.period),4])
+  SigmaPsi <- diag(c(s2psi1, s2psi2))
+  InvS2Psi <- solve(SigmaPsi)
+  
+  s2e1 <- ifelse(vc1[vc1$grp=="Residual",4]==0,0.01,vc1[vc1$grp=="Residual",4])
+  s2e2 <- ifelse(vc2[vc2$grp=="Residual",4]==0,0.01,vc2[vc2$grp=="Residual",4])
   SigmaE <- diag(c(s2e1, s2e2))
   InvS2E <- solve(SigmaE)
   
-  #Y <- as.matrix(data[,c("out1","out2")])
   Y <- as.matrix(cbind(model.frame(TermsX1, data = data)[,1],model.frame(TermsX2, data = data)[,1]))
-  #ID <- as.numeric(data$cluster)
-  ID <- fm1$groups[[1]]
-  n <- length(unique(ID))
-  #X <- as.matrix(cbind(1, data[,"arm"])) # design matrix
+  ID <- data[, paste(cluster)]
+  ID.period <- data[, paste(cluster.period)]
+  n <- length(unique(ID)) # number of clusters
+  np <- length(unique(data[, paste(cluster.period)])) # number of cluster-periods
+  nperiods <- table(unique(cbind(data[, paste(cluster)],data[, paste(cluster.period)]))[,1]) # number of periods in each cluster
+  t <- max(nperiods)
+  cID.period <- unique(cbind(data[, paste(cluster)],data[, paste(cluster.period)]))[,1]
   X <- as.matrix(cbind(1, mfX1)) # design matrix
+  
+  # Function for generating inverse of block diagonal covariance matrix for the set of all random effects
+  bdiag_m <- function(lmat) {
+    ## Copyright (C) 2016 Martin Maechler, ETH Zurich
+    if(!length(lmat)) return(new("dgCMatrix"))
+    stopifnot(is.list(lmat), is.matrix(lmat[[1]]),
+              (k <- (d <- dim(lmat[[1]]))[1]) == d[2], # k x k
+              all(vapply(lmat, dim, integer(2)) == k)) # all of them
+    N <- length(lmat)
+    if(N * k > .Machine$integer.max)
+      stop("resulting matrix too large; would be  M x M, with M=", N*k)
+    M <- as.integer(N * k)
+    ## result: an   M x M  matrix
+    new("dgCMatrix", Dim = c(M,M),
+        ## 'i :' maybe there's a faster way (w/o matrix indexing), but elegant?
+        i = as.vector(matrix(0L:(M-1L), nrow=k)[, rep(seq_len(N), each=k)]),
+        p = k * 0L:M,
+        x = as.double(unlist(lmat, recursive=FALSE, use.names=FALSE)))
+  }
   
   ESSphi1 <- matrix(0,n,K)
   ESSphi2 <- array(0,c(K,K,n))
+  
+  ESSpsi1 <- matrix(0,np,K)
+  ESSpsi2 <- array(0,c(K,K,np))
+  
+  ESSphipsi2 <- array(0,c(K,K,np))
   
   
   #maxiter=500
@@ -71,9 +107,14 @@ EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
     se11 = theta[(2*nvar+4)]
     se12 = theta[(2*nvar+5)]
     se22 = theta[(2*nvar+6)]
+    spsi11 = theta[(2*nvar+7)]
+    spsi12 = theta[(2*nvar+8)]
+    spsi22 = theta[(2*nvar+9)]
     SigmaPhi = matrix(c(sphi11,sphi12,sphi12,sphi22),2,2)
+    SigmaPsi = matrix(c(spsi11,spsi12,spsi12,spsi22),2,2)
     SigmaE = matrix(c(se11,se12,se12,se22),2,2)
     InvS2Phi <- solve(SigmaPhi)
+    InvS2Psi <- solve(SigmaPsi)
     InvS2E <- solve(SigmaE)
     
     temp <- 0
@@ -82,16 +123,33 @@ EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
       Xj <- X[ID == j,,drop=FALSE]
       residj <- Yj - cbind(Xj%*%beta1, Xj%*%beta2)
       obs = c(t(residj))
-      tm1 <- (m[j]-1)*log(det(SigmaE))+log(det(SigmaE+m[j]*SigmaPhi))
-      InvSS2 <- solve(SigmaE+m[j]*SigmaPhi)-InvS2E
-      Invj <- kronecker(diag(nrow=m[j]),InvS2E) + 
-        kronecker(matrix(1,m[j],m[j]),InvSS2)/m[j]
-      tm2 <- c(t(obs) %*% Invj %*% obs)
-      temp <- temp-(tm1+tm2)/2
+      psizes <- mp[cID.period==j]
+      if(m[j]/nperiods[j] == psizes[1]){     #If equal number of subjects/period
+        N <- psizes[1]          
+        tm1 <- nperiods[j]*(N-1)*log(det(SigmaE))+(nperiods[j]-1)*log(det(SigmaE+N*SigmaPsi))+log(det(SigmaE+N*(SigmaPsi+nperiods[j]*SigmaPhi)))
+        InvSS2 <- solve(SigmaE+N*SigmaPsi)-InvS2E
+        InvSS22 <- solve(SigmaE+N*(SigmaPsi+nperiods[j]*SigmaPhi))-solve(SigmaE+N*SigmaPsi)
+        Invj <- kronecker(diag(1,nrow=nperiods[j]),kronecker(diag(1,nrow=N),InvS2E) + 
+                            kronecker(matrix(1,N,N),InvSS2)/N) +
+          kronecker(matrix(1,nperiods[j],nperiods[j]),kronecker(matrix(1,N,N),InvSS22)/(nperiods[j]*N))
+        tm2 <- c(t(obs) %*% Invj %*% obs)
+        temp <- temp-(tm1+tm2[1])/2
+      } else {                                #If unequal number of subjects/period
+        mlist <- list(kronecker(matrix(1,psizes[1],psizes[1]), SigmaPsi))
+        for (k in 2:nperiods[j]){
+          mlist<- c(mlist,list(kronecker(matrix(1,psizes[k],psizes[k]), SigmaPsi)))
+        }
+        Omega <- bdiag_m(mlist) + kronecker(diag(1,m[j]),SigmaE) + kronecker(matrix(1,m[j],m[j]),SigmaPhi)
+        Invj <- solve(Omega)
+        tm1 <- log(det(Omega))
+        tm2 <- t(obs) %*% Invj %*% obs
+        temp <- temp-(tm1+tm2[1])/2
+      }
     }
+    
     temp
   }
-  thetah = c(zeta,c(SigmaPhi[!lower.tri(SigmaPhi)]),c(SigmaE[!lower.tri(SigmaE)]))
+  thetah = c(zeta,c(SigmaPhi[!lower.tri(SigmaPhi)]),c(SigmaPsi[!lower.tri(SigmaPsi)]),c(SigmaE[!lower.tri(SigmaE)]))
   LLold <- loglik(thetah)
   
   
@@ -104,57 +162,104 @@ EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
       Xjtotal <- matrix(0,K*m[j],2*nvar)
       Xjtotal[2*(1:m[j])-1,1:nvar] <- Xj
       Xjtotal[2*(1:m[j]),(nvar+1):(2*nvar)] <- Xj
-      InvSS2 <- solve(SigmaE+m[j]*SigmaPhi)-InvS2E
-      Invj <- kronecker(diag(nrow=m[j]),InvS2E) + 
-        kronecker(matrix(1,m[j],m[j]),InvSS2)/m[j]
-      Ustar <- Ustar + t(Xjtotal)%*%Invj%*%Xjtotal
+      psizes <- mp[cID.period==j]
+      if(m[j]/nperiods[j] == psizes[1]){     #If equal number of subjects/period
+        N <- psizes[1]      
+        InvSS2 <- solve(SigmaE+N*SigmaPsi)-InvS2E
+        InvSS22 <- solve(SigmaE+N*(SigmaPsi+nperiods[j]*SigmaPhi))-solve(SigmaE+N*SigmaPsi)
+        Invj <- kronecker(diag(1,nrow=nperiods[j]),kronecker(diag(1,nrow=N),InvS2E) + 
+                          kronecker(matrix(1,N,N),InvSS2)/N) +
+          kronecker(matrix(1,nperiods[j],nperiods[j]),kronecker(matrix(1,N,N),InvSS22)/(nperiods[j]*N))
+        Ustar <- Ustar + t(Xjtotal)%*%Invj%*%Xjtotal
+      } else {                                #If unequal number of subjects/period
+        mlist <- list(kronecker(matrix(1,psizes[1],psizes[1]), SigmaPsi))
+        for (k in 2:nperiods[j]){
+          mlist<- c(mlist,list(kronecker(matrix(1,psizes[k],psizes[k]), SigmaPsi)))
+        }
+        Omega <- bdiag_m(mlist) + kronecker(diag(1,m[j]),SigmaE) + kronecker(matrix(1,m[j],m[j]),SigmaPhi)
+        Invj <- solve(Omega)
+        Ustar <- Ustar + t(Xjtotal)%*%Invj%*%Xjtotal
+      }
     }
     naive = solve(Ustar)
     
     # Expectation step
+    count <- 1
+    count2 <- 1
     for(j in 1:n){
       Yj <- Y[ID == j,,drop=FALSE]
       Xj <- X[ID == j,,drop=FALSE]
+      Zj <- Z[ID == j,] 
+      Zj <- Zj[,colSums(Zj)>0] 
+      Zjj <- kronecker(Zj,diag(1,nrow=K))
+      mlist <- c(replicate(1,InvS2Phi,simplify=FALSE),replicate(nperiods[j], InvS2Psi, simplify=FALSE))
+      InvS2Zeta <- bdiag_m(mlist)
       residj <- Yj - cbind(Xj%*%beta1, Xj%*%beta2)
-      Vj <- solve(InvS2Phi + m[j]*InvS2E)
+      residjj <- kronecker(residj[,1],matrix(c(1,0),nrow=K)) + kronecker(residj[,2],matrix(c(0,1),nrow=K))
+      Vj <- solve(InvS2Zeta + t(Zjj)%*%kronecker(diag(1,nrow=nrow(Xj)),InvS2E)%*%Zjj)
       
       # bias-correction 1
       Xjtotal <- matrix(0,K*m[j],2*nvar)
       Xjtotal[2*(1:m[j])-1,1:nvar] <- Xj
       Xjtotal[2*(1:m[j]),(nvar+1):(2*nvar)] <- Xj
-      obs = c(t(residj))
-      InvSS2 <- solve(SigmaE+m[j]*SigmaPhi)-InvS2E
-      Invj <- kronecker(diag(nrow=m[j]),InvS2E) + 
-        kronecker(matrix(1,m[j],m[j]),InvSS2)/m[j]
-      Omegaj <- kronecker(diag(nrow=m[j]),SigmaE) + 
-        kronecker(matrix(1,m[j],m[j]),SigmaPhi)
+      #obs = c(t(residj))
+      psizes <- mp[cID.period==j]
+      if(m[j]/nperiods[j] == psizes[1]){     #If equal number of subjects/period
+        N <- psizes[1]          
+        Omegaj <- kronecker(diag(nrow=m[j]),SigmaE) + kronecker(diag(nrow=nperiods[j]),kronecker(matrix(1,N,N),SigmaPsi)) +
+          kronecker(matrix(1,m[j],m[j]),SigmaPhi)
+      } else {                                #If unequal number of subjects/period
+        mlist <- list(kronecker(matrix(1,psizes[1],psizes[1]), SigmaPsi))
+        for (k in 2:nperiods[j]){
+          mlist<- c(mlist,list(kronecker(matrix(1,psizes[k],psizes[k]), SigmaPsi)))
+        }
+        Omegaj <- bdiag_m(mlist) + kronecker(diag(1,m[j]),SigmaE) + kronecker(matrix(1,m[j],m[j]),SigmaPhi)
+      }
       Hj <- Omegaj %*% solve(Omegaj - Xjtotal%*%naive%*%t(Xjtotal))
-      bcemp <- Hj%*%tcrossprod(obs)
+      bcemp <- Hj%*%tcrossprod(residjj)
       bcemp <- 1/2*(bcemp + t(bcemp)) # symmetrize
-      bcprod1 <- kronecker(t(rep(1,m[j])),diag(nrow=2)) %*% bcemp %*%
-        kronecker(rep(1,m[j]),diag(nrow=2))
+      #bcprod1 <- kronecker(t(rep(1,m[j])),diag(nrow=2)) %*% bcemp %*%
+      #  kronecker(rep(1,m[j]),diag(nrow=2))
       
       #E step
-      Muj <- as.numeric(Vj %*% InvS2E %*% colSums(residj))
-      #Nujj <- Vj + tcrossprod(Muj)
-      Nujj <- Vj + (Vj%*%InvS2E) %*% bcprod1 %*% t(Vj%*%InvS2E)
-      ESSphi1[j,] <- Muj
-      ESSphi2[,,j] <- Nujj
+      Muj <- Vj %*% t(Zjj)%*%kronecker(diag(1,nrow=nrow(Xj)),InvS2E)%*%residjj
+      Nujj <- Vj + (Vj %*% t(Zjj)%*%kronecker(diag(1,nrow=nrow(Xj)),InvS2E)) %*% bcemp %*% t(Vj %*% t(Zjj)%*%kronecker(diag(1,nrow=nrow(Xj)),InvS2E))
+     
+      ESSphi1[j,] <- Muj[1:K,]
+      ESSphi2[,,j] <- as.matrix(Nujj[1:K,1:K])
       
+      Sij <- Muj[-c(1:K),]
+      VSij <- Nujj[,-(1:K)][-(1:K),]
       
+      for(k in 1:nperiods[j]){
+        ESSpsi1[count,] <- Sij[1:K]
+        ESSpsi2[,,count] <- as.matrix(VSij[1:K,1:K])
+        count <- count + 1
+        Sij <- Sij[-(1:K)]
+        VSij <- VSij[,-(1:K)][-(1:K),]
+      }
       
+      Vbs <- Nujj
+      for(k in 1:t){
+        ESSphipsi2[,,count2] <- as.matrix(Vbs[1:K,(K+1):(2*K)]) + as.matrix(Vbs[(K+1):(2*K),1:K]) 
+        Vbs <- Vbs[,-((K+1):(2*K))][-((K+1):(2*K)),]
+        count2 <- count2 + 1
+      }
     }
     
-    # Maximization step - phi
+    # Maximization step - phi and psi
     SigmaPhi <- apply(ESSphi2,1:2, sum)/n
     InvS2Phi <- solve(SigmaPhi)
+    
+    SigmaPsi <- apply(ESSpsi2,1:2, sum)/np
+    InvS2Psi <- solve(SigmaPsi)
     
     # Maximization step - zeta
     # Simplify the expression analytically, and obtain simple expression!
     XXt <- crossprod(X)
     Vzeta <-solve(kronecker(InvS2E, XXt))
-    rzeta1 <- t(X)%*%(Y[,1]-ESSphi1[ID,1])
-    rzeta2 <- t(X)%*%(Y[,2]-ESSphi1[ID,2])
+    rzeta1 <- t(X)%*%(Y[,1]-ESSphi1[ID,1]-ESSpsi1[ID.period,1])
+    rzeta2 <- t(X)%*%(Y[,2]-ESSphi1[ID,2]-ESSpsi1[ID.period,2])
     zeta <- Vzeta %*% rbind(InvS2E[1,1]*rzeta1 + InvS2E[1,2]*rzeta2,
                             InvS2E[2,1]*rzeta1 + InvS2E[2,2]*rzeta2)
     zeta <- c(zeta)
@@ -173,11 +278,18 @@ EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
       Xjtotal[2*(1:m[j])-1,1:nvar] <- Xj
       Xjtotal[2*(1:m[j]),(nvar+1):(2*nvar)] <- Xj
       obs = c(t(residj))
-      InvSS2 <- solve(SigmaE+m[j]*SigmaPhi)-InvS2E
-      Invj <- kronecker(diag(nrow=m[j]),InvS2E) + 
-        kronecker(matrix(1,m[j],m[j]),InvSS2)/m[j]
-      Omegaj <- kronecker(diag(nrow=m[j]),SigmaE) + 
-        kronecker(matrix(1,m[j],m[j]),SigmaPhi)
+      psizes <- mp[cID.period==j]
+      if(m[j]/nperiods[j] == psizes[1]){     #If equal number of subjects/period
+        N <- psizes[1]          
+        Omegaj <- kronecker(diag(nrow=m[j]),SigmaE) + kronecker(diag(nrow=nperiods[j]),kronecker(matrix(1,N,N),SigmaPsi)) +
+          kronecker(matrix(1,m[j],m[j]),SigmaPhi)
+      } else {                                #If unequal number of subjects/period
+        mlist <- list(kronecker(matrix(1,psizes[1],psizes[1]), SigmaPsi))
+        for (k in 2:nperiods[j]){
+          mlist<- c(mlist,list(kronecker(matrix(1,psizes[k],psizes[k]), SigmaPsi)))
+        }
+        Omegaj <- bdiag_m(mlist) + kronecker(diag(1,m[j]),SigmaE) + kronecker(matrix(1,m[j],m[j]),SigmaPhi)
+      }
       Hj <- Omegaj %*% solve(Omegaj - Xjtotal%*%naive%*%t(Xjtotal))
       bcemp <- Hj%*%tcrossprod(obs)
       bcemp <- 1/2*(bcemp + t(bcemp)) # symmetrize
@@ -194,26 +306,23 @@ EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
     
     
     re <- Y - cbind(X%*%beta1, X%*%beta2)
-    #rss <- crossprod(re) + rowSums(sweep(ESSphi2,3,m,FUN="*"),dims=2) -
-    #  crossprod(ESSphi1,rowsum(re,ID)) - crossprod(rowsum(re,ID),ESSphi1)
-    
-    rss <- bcre + rowSums(sweep(ESSphi2,3,m,FUN="*"),dims=2) -
-      crossprod(ESSphi1,rowsum(re,ID)) - crossprod(rowsum(re,ID),ESSphi1)
+    rss <- bcre + rowSums(sweep(ESSphi2,3,m,FUN="*"),dims=2) + rowSums(sweep(ESSpsi2,3,mp,FUN="*"),dims=2) -
+      crossprod(ESSphi1,rowsum(re,ID)) - crossprod(rowsum(re,ID),ESSphi1) -
+      crossprod(ESSpsi1,rowsum(re,ID.period)) - crossprod(rowsum(re,ID.period),ESSpsi1) +
+      rowSums(sweep(ESSphipsi2,3,mp,FUN="*"),dims=2)
     
     SigmaE <- rss/sum(m)
-    #SigmaE <- diag(diag(SigmaE))
-    
     InvS2E <- solve(SigmaE)
     
     # whether the algorithm converges
-    # thetah = c(zeta,c(SigmaPhi[!lower.tri(SigmaPhi)]),diag(SigmaE))
-    thetah = c(zeta,c(SigmaPhi[!lower.tri(SigmaPhi)]),c(SigmaE[!lower.tri(SigmaE)]))
+    thetah = c(zeta,c(SigmaPhi[!lower.tri(SigmaPhi)]),c(SigmaE[!lower.tri(SigmaE)]),c(SigmaPsi[!lower.tri(SigmaPsi)]))
     LLnew <- loglik(thetah)
     delta <- abs(LLnew - LLold)
     LLold <- LLnew
     converge = (abs(delta)<=epsilon)
     niter <- niter + 1
-    if(verbose) cat(paste('iter=',niter),'\t',paste('param.error=',epsilon),'\t',paste('loglik=',LLnew),'\n');  
+    if(verbose) cat(paste('iter=',niter),'\t',paste('param.error=',epsilon),'\t',paste('loglik=',LLnew),'\n');
+    #if(verbose) cat(paste('iter=',niter),'\t',paste('loglik=',LLnew),'\t',paste('SigmaE=',c(SigmaE[!lower.tri(SigmaE)])),'\n')
     
     #print(niter)
     #print(zeta)
@@ -222,14 +331,18 @@ EM.estim <- function(data, fm1,fm2, maxiter=500,epsilon=1e-4
     #print(LLnew)
   }
   
-  Vtheta = try(solve(-hessian(loglik,thetah)))
-  SEtheta = sqrt(diag(Vtheta))
+  Vtheta <- matrix(NA,length(thetah),length(thetah))
+  try(Vtheta <- solve(-hessian(loglik,thetah))) #, silent = TRUE
+  SEcheck <- "GOOD"
+  if(anyNA(Vtheta)==TRUE|min(diag(Vtheta))<0) SEcheck <- "ERROR"
+  #Vtheta = try(solve(-hessian(loglik,thetah)))
+  #SEtheta = sqrt(diag(Vtheta))
+  #if(class(Vtheta)=="try-error"){i<- i-1; fail_count <- fail_count+1}
+  #if(i<itemp){next}
+  #if(fail_count > max_fail){break}
+  #SEtheta = rbind(SEtheta, sqrt(diag(Vtheta)))
   
-  param <- list(theta=list(zeta=zeta,SigmaE=SigmaE,SigmaPhi=SigmaPhi),loglik=LLnew,eps=epsilon,iter=niter,
-                SEtheta=SEtheta,Vtheta=Vtheta)
+  param <- list(theta=list(zeta=zeta,SigmaE=SigmaE,SigmaPhi=SigmaPhi,SigmaPsi=SigmaPsi),loglik=LLnew,eps=epsilon,iter=niter,
+                Vtheta=Vtheta,SEcheck=SEcheck) #SEtheta=SEtheta,
   return(param) 
 }
-
-# formula1 <-as.formula(  "out1 ~ arm")
-# formula2 <-as.formula(  "out2 ~ arm")
-# EM.estim(data, formula1,formula2, maxiter=500,epsilon=1e-4, verbose=TRUE)
