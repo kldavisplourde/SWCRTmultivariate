@@ -254,6 +254,7 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
   
   param <- list(theta=list(zeta=zeta,SigmaE=SigmaE,SigmaPhi=SigmaPhi,SigmaPsi=SigmaPsi),loglik=LLnew,eps=epsilon,iter=niter,
                 Vtheta=Vtheta,SEcheck=SEcheck) #SEtheta=SEtheta,
+  return(param) 
 }
 
 
