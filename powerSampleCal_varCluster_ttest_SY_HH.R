@@ -163,7 +163,7 @@ rho2<-matrix(c(1,0.8,0.8,1),2)
 calPower_IU(deltas,margins=c(0,0),vars=c(1,1),rho01,rho2,N,t,m,K=2,alpha=0.05)
 
 #check
-scenarios<-read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/Sim_Params.txt", header=TRUE, sep="")
+scenarios<-read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/HH/Sim_Params.txt", header=TRUE, sep="")
 power<-NULL
 for(k in 1:27){
   scenario <- subset(scenarios, scenario == k)
@@ -174,6 +174,25 @@ for(k in 1:27){
   deltas<-c(scenario$delta1,scenario$delta2)
   rho01<-matrix(c(scenario$rho01.11,scenario$rho01.12,scenario$rho01.12,scenario$rho01.22),2)
   rho2<-matrix(c(1,scenario$rho2.12,scenario$rho2.12,1),2)
+  
+  pred<-calPower_IU(deltas,margins=c(0,0),vars=c(1,1),rho01,rho2,N,t,m,K=2,alpha=0.05)
+  
+  power.k <-cbind(pred$pred.power.t,pred$pred.power.z)
+  
+  power<-rbind(power,power.k)
+}
+
+# Naive
+power<-NULL
+for(k in 1:27){
+  scenario <- subset(scenarios, scenario == k)
+  
+  t <- scenario$t
+  N <- scenario$N
+  m <- scenario$m
+  deltas<-c(scenario$delta1,scenario$delta2)
+  rho01<-matrix(c(scenario$rho01.11,0,0,scenario$rho01.22),2)
+  rho2<-matrix(c(1,0,0,1),2)
   
   pred<-calPower_IU(deltas,margins=c(0,0),vars=c(1,1),rho01,rho2,N,t,m,K=2,alpha=0.05)
   
