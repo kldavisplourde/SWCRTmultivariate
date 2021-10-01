@@ -136,11 +136,13 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
         tm2 <- c(t(obs) %*% Invj %*% obs)
         temp <- temp-(tm1+tm2[1])/2
       } else {                                #If unequal number of subjects/period
-        mlist <- list(kronecker(matrix(1,psizes[1],psizes[1]), SigmaPsi))
-        for (k in 2:nperiods[j]){
-          mlist<- c(mlist,list(kronecker(matrix(1,psizes[k],psizes[k]), SigmaPsi)))
+        bdiag_s <- matrix(0,nrow=2*sum(psizes),ncol=2*sum(psizes))
+        last.row<-0
+        for (k in 1:nperiods[j]){
+          bdiag_s[(last.row+1):(last.row+2*psizes[k]),(last.row+1):(last.row+2*psizes[k])] <- kronecker(matrix(1,psizes[k],psizes[k]), SigmaPsi)
+          last.row<-last.row+2*psizes[k]
         }
-        Omega <- bdiag_m(mlist) + kronecker(diag(1,m[j]),SigmaE) + kronecker(matrix(1,m[j],m[j]),SigmaPhi)
+        Omega <- bdiag_s + kronecker(diag(1,m[j]),SigmaE) + kronecker(matrix(1,m[j],m[j]),SigmaPhi)
         Invj <- solve(Omega)
         tm1 <- log(det(Omega))
         tm2 <- t(obs) %*% Invj %*% obs

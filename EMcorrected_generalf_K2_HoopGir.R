@@ -135,11 +135,13 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
         tm2 <- c(t(obs) %*% Invj %*% obs)
         temp <- temp-(tm1+tm2[1])/2
       } else {                                #If unequal number of subjects/period
-        mlist <- list(kronecker(matrix(1,psizes[1],psizes[1]), SigmaPsi))
-        for (k in 2:nperiods[j]){
-          mlist<- c(mlist,list(kronecker(matrix(1,psizes[k],psizes[k]), SigmaPsi)))
+        bdiag_s <- matrix(0,nrow=2*sum(psizes),ncol=2*sum(psizes))
+        last.row<-0
+        for (k in 1:nperiods[j]){
+          bdiag_s[(last.row+1):(last.row+2*psizes[k]),(last.row+1):(last.row+2*psizes[k])] <- kronecker(matrix(1,psizes[k],psizes[k]), SigmaPsi)
+          last.row<-last.row+2*psizes[k]
         }
-        Omega <- bdiag_m(mlist) + kronecker(diag(1,m[j]),SigmaE) + kronecker(matrix(1,m[j],m[j]),SigmaPhi)
+        Omega <- bdiag_s + kronecker(diag(1,m[j]),SigmaE) + kronecker(matrix(1,m[j],m[j]),SigmaPhi)
         Invj <- solve(Omega)
         tm1 <- log(det(Omega))
         tm2 <- t(obs) %*% Invj %*% obs
@@ -172,11 +174,13 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
           kronecker(matrix(1,nperiods[j],nperiods[j]),kronecker(matrix(1,N,N),InvSS22)/(nperiods[j]*N))
         Ustar <- Ustar + t(Xjtotal)%*%Invj%*%Xjtotal
       } else {                                #If unequal number of subjects/period
-        mlist <- list(kronecker(matrix(1,psizes[1],psizes[1]), SigmaPsi))
-        for (k in 2:nperiods[j]){
-          mlist<- c(mlist,list(kronecker(matrix(1,psizes[k],psizes[k]), SigmaPsi)))
+        bdiag_s <- matrix(0,nrow=2*sum(psizes),ncol=2*sum(psizes))
+        last.row<-0
+        for (k in 1:nperiods[j]){
+          bdiag_s[(last.row+1):(last.row+2*psizes[k]),(last.row+1):(last.row+2*psizes[k])] <- kronecker(matrix(1,psizes[k],psizes[k]), SigmaPsi)
+          last.row<-last.row+2*psizes[k]
         }
-        Omega <- bdiag_m(mlist) + kronecker(diag(1,m[j]),SigmaE) + kronecker(matrix(1,m[j],m[j]),SigmaPhi)
+        Omega <- bdiag_s + kronecker(diag(1,m[j]),SigmaE) + kronecker(matrix(1,m[j],m[j]),SigmaPhi)
         Invj <- solve(Omega)
         Ustar <- Ustar + t(Xjtotal)%*%Invj%*%Xjtotal
       }
@@ -209,11 +213,13 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
         Omegaj <- kronecker(diag(nrow=m[j]),SigmaE) + kronecker(diag(nrow=nperiods[j]),kronecker(matrix(1,N,N),SigmaPsi)) +
           kronecker(matrix(1,m[j],m[j]),SigmaPhi)
       } else {                                #If unequal number of subjects/period
-        mlist <- list(kronecker(matrix(1,psizes[1],psizes[1]), SigmaPsi))
-        for (k in 2:nperiods[j]){
-          mlist<- c(mlist,list(kronecker(matrix(1,psizes[k],psizes[k]), SigmaPsi)))
+        bdiag_s <- matrix(0,nrow=2*sum(psizes),ncol=2*sum(psizes))
+        last.row<-0
+        for (k in 1:nperiods[j]){
+          bdiag_s[(last.row+1):(last.row+2*psizes[k]),(last.row+1):(last.row+2*psizes[k])] <- kronecker(matrix(1,psizes[k],psizes[k]), SigmaPsi)
+          last.row<-last.row+2*psizes[k]
         }
-        Omegaj <- bdiag_m(mlist) + kronecker(diag(1,m[j]),SigmaE) + kronecker(matrix(1,m[j],m[j]),SigmaPhi)
+        Omegaj <- bdiag_s + kronecker(diag(1,m[j]),SigmaE) + kronecker(matrix(1,m[j],m[j]),SigmaPhi)
       }
       Hj <- Omegaj %*% solve(Omegaj - Xjtotal%*%naive%*%t(Xjtotal))
       bcemp <- Hj%*%tcrossprod(residjj)
@@ -284,11 +290,13 @@ EM.estim <- function(data, fm1,fm2, cluster,cluster.period, maxiter=500,epsilon=
         Omegaj <- kronecker(diag(nrow=m[j]),SigmaE) + kronecker(diag(nrow=nperiods[j]),kronecker(matrix(1,N,N),SigmaPsi)) +
           kronecker(matrix(1,m[j],m[j]),SigmaPhi)
       } else {                                #If unequal number of subjects/period
-        mlist <- list(kronecker(matrix(1,psizes[1],psizes[1]), SigmaPsi))
-        for (k in 2:nperiods[j]){
-          mlist<- c(mlist,list(kronecker(matrix(1,psizes[k],psizes[k]), SigmaPsi)))
+        bdiag_s <- matrix(0,nrow=2*sum(psizes),ncol=2*sum(psizes))
+        last.row<-0
+        for (k in 1:nperiods[j]){
+          bdiag_s[(last.row+1):(last.row+2*psizes[k]),(last.row+1):(last.row+2*psizes[k])] <- kronecker(matrix(1,psizes[k],psizes[k]), SigmaPsi)
+          last.row<-last.row+2*psizes[k]
         }
-        Omegaj <- bdiag_m(mlist) + kronecker(diag(1,m[j]),SigmaE) + kronecker(matrix(1,m[j],m[j]),SigmaPhi)
+        Omegaj <- bdiag_s + kronecker(diag(1,m[j]),SigmaE) + kronecker(matrix(1,m[j],m[j]),SigmaPhi)
       }
       Hj <- Omegaj %*% solve(Omegaj - Xjtotal%*%naive%*%t(Xjtotal))
       bcemp <- Hj%*%tcrossprod(obs)
