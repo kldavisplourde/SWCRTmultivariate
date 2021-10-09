@@ -133,19 +133,51 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
 }
 
 #Sim Study Development
-rho2<-matrix(c(1,0.2,0.2,1),2)
-  rho02<-matrix(c(0.02,0.01,0.01,0.02),2);rho01<-matrix(c(0.01,0.005,0.005,0.01),2);deltas<-c(0.4,0.3);t<-4;N=(t-1)*3;m<-50
+sd<-2
+#rho2<-matrix(c(1,0.2,0.2,1),2)
+  #rho02<-matrix(c(0.02,0.01,0.01,0.02),2);rho01<-matrix(c(0.01,0.005,0.005,0.01),2);deltas<-c(0.86*sd,0.71*sd);t<-3;N=(t-1)*4;m<-13
+  #rho02<-matrix(c(0.02,0.01,0.01,0.1),2);rho01<-matrix(c(0.01,0.005,0.005,0.05),2);deltas<-c(0.6*sd,0.78*sd);t<-5;N=(t-1)*2;m<-8
+  #rho02<-matrix(c(0.02,0.01,0.01,0.2),2);rho01<-matrix(c(0.01,0.005,0.005,0.1),2);deltas<-c(0.45*sd,0.92*sd);t<-4;N=(t-1)*3;m<-15
   
-rho2<-matrix(c(1,0.5,0.5,1),2)
-  rho02<-matrix(c(0.1,0.05,0.05,0.1),2);rho01<-matrix(c(0.05,0.025,0.025,0.05),2);deltas<-c(0.5,0.5);t<-4;N=(t-1)*4;m<-20
+  #rho02<-matrix(c(0.1,0.01,0.01,0.02),2);rho01<-matrix(c(0.05,0.005,0.005,0.01),2);deltas<-c(0.82*sd,0.65*sd);t<-5;N=(t-1)*2;m<-7
+  #rho02<-matrix(c(0.1,0.05,0.05,0.1),2);rho01<-matrix(c(0.05,0.025,0.025,0.05),2);deltas<-c(0.49*sd,0.98*sd);t<-4;N=(t-1)*4;m<-15
+  #rho02<-matrix(c(0.1,0.05,0.05,0.2),2);rho01<-matrix(c(0.05,0.025,0.025,0.1),2);deltas<-c(0.59*sd,0.99*sd);t<-3;N=(t-1)*6;m<-20
+  
+  #rho02<-matrix(c(0.2,0.01,0.01,0.02),2);rho01<-matrix(c(0.1,0.005,0.005,0.01),2);deltas<-c(0.47*sd,0.22*sd);t<-5;N=(t-1)*5;m<-18
+  #rho02<-matrix(c(0.2,0.05,0.05,0.1),2);rho01<-matrix(c(0.1,0.025,0.025,0.05),2);deltas<-c(0.92*sd,0.92*sd);t<-3;N=(t-1)*5;m<-12
+  #rho02<-matrix(c(0.2,0.1,0.1,0.2),2);rho01<-matrix(c(0.1,0.05,0.05,0.1),2);deltas<-c(0.54*sd,0.81*sd);t<-4;N=(t-1)*4;m<-25
 
-rho2<-matrix(c(1,0.8,0.8,1),2)
-  rho02<-matrix(c(0.3,0.075,0.075,0.15),2);rho01<-matrix(c(0.1,0.025,0.025,0.05),2);deltas<-c(0.6,0.7);t<-3;N=(t-1)*10;m<-60
+#rho2<-matrix(c(1,0.5,0.5,1),2)
+  #rho02<-matrix(c(0.02,0.01,0.01,0.02),2);rho01<-matrix(c(0.01,0.005,0.005,0.01),2);deltas<-c(0.62*sd,0.53*sd);t<-4;N=(t-1)*5;m<-5
+  #rho02<-matrix(c(0.02,0.01,0.01,0.1),2);rho01<-matrix(c(0.01,0.005,0.005,0.05),2);deltas<-c(0.34*sd,0.88*sd);t<-3;N=(t-1)*8;m<-22
+  #rho02<-matrix(c(0.02,0.01,0.01,0.2),2);rho01<-matrix(c(0.01,0.005,0.005,0.1),2);deltas<-c(0.24*sd,0.83*sd);t<-5;N=(t-1)*5;m<-13
   
-calPower_IU(deltas,margins=c(0,0),vars=c(2,2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+  #rho02<-matrix(c(0.1,0.01,0.01,0.02),2);rho01<-matrix(c(0.05,0.005,0.005,0.01),2);deltas<-c(0.38*sd,0.55*sd);t<-4;N=(t-1)*7;m<-10
+  #rho02<-matrix(c(0.1,0.05,0.05,0.1),2);rho01<-matrix(c(0.05,0.025,0.025,0.05),2);deltas<-c(0.3*sd,0.68*sd);t<-5;N=(t-1)*4;m<-25
+  #rho02<-matrix(c(0.1,0.05,0.05,0.2),2);rho01<-matrix(c(0.05,0.025,0.025,0.1),2);deltas<-c(0.62*sd,0.62*sd);t<-3;N=(t-1)*11;m<-8
+
+  #rho02<-matrix(c(0.2,0.01,0.01,0.02),2);rho01<-matrix(c(0.1,0.005,0.005,0.01),2);deltas<-c(0.84*sd,0.29*sd);t<-3;N=(t-1)*13;m<-18
+  #rho02<-matrix(c(0.2,0.05,0.05,0.1),2);rho01<-matrix(c(0.1,0.025,0.025,0.05),2);deltas<-c(0.4*sd,0.4*sd);t<-4;N=(t-1)*9;m<-11
+  #rho02<-matrix(c(0.2,0.1,0.1,0.2),2);rho01<-matrix(c(0.1,0.05,0.05,0.1),2);deltas<-c(0.32*sd,0.84*sd);t<-5;N=(t-1)*6;m<-24
+  
+  
+#rho2<-matrix(c(1,0.8,0.8,1),2)
+  #rho02<-matrix(c(0.02,0.01,0.01,0.02),2);rho01<-matrix(c(0.01,0.005,0.005,0.01),2);deltas<-c(0.24*sd,0.55*sd);t<-5;N=(t-1)*4;m<-20
+  #rho02<-matrix(c(0.02,0.01,0.01,0.1),2);rho01<-matrix(c(0.01,0.005,0.005,0.05),2);deltas<-c(0.29*sd,0.57*sd);t<-3;N=(t-1)*15;m<-14
+  #rho02<-matrix(c(0.02,0.01,0.01,0.2),2);rho01<-matrix(c(0.01,0.005,0.005,0.1),2);deltas<-c(0.2*sd,0.84*sd);t<-4;N=(t-1)*10;m<-17
+
+  #rho02<-matrix(c(0.1,0.01,0.01,0.02),2);rho01<-matrix(c(0.05,0.005,0.005,0.01),2);deltas<-c(0.31*sd,0.62*sd);t<-5;N=(t-1)*5;m<-13
+  #rho02<-matrix(c(0.1,0.05,0.05,0.1),2);rho01<-matrix(c(0.05,0.025,0.025,0.05),2);deltas<-c(0.63*sd,0.92*sd);t<-3;N=(t-1)*5;m<-22
+  #rho02<-matrix(c(0.1,0.05,0.05,0.2),2);rho01<-matrix(c(0.05,0.025,0.025,0.1),2);deltas<-c(0.45*sd,0.45*sd);t<-4;N=(t-1)*6;m<-18
+
+  #rho02<-matrix(c(0.2,0.01,0.01,0.02),2);rho01<-matrix(c(0.1,0.005,0.005,0.01),2);deltas<-c(0.99*sd,0.25*sd);t<-3;N=(t-1)*14;m<-25
+  #rho02<-matrix(c(0.2,0.05,0.05,0.1),2);rho01<-matrix(c(0.1,0.025,0.025,0.05),2);deltas<-c(0.63*sd,0.31*sd);t<-4;N=(t-1)*8;m<-17
+  #rho02<-matrix(c(0.2,0.1,0.1,0.2),2);rho01<-matrix(c(0.1,0.05,0.05,0.1),2);deltas<-c(0.82*sd,0.82*sd);t<-5;N=(t-1)*2;m<-10
+
+calPower_IU(deltas,margins=c(0,0),vars=c(4,4),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
 
 #check
-scenarios<-read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/Sim_Params.txt", header=TRUE, sep="")
+scenarios<-read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/HoopGir/Sim_Params.txt", header=TRUE, sep="")
 power<-NULL
 for(k in 1:27){
   scenario <- subset(scenarios, scenario == k)
@@ -155,9 +187,10 @@ for(k in 1:27){
   m <- scenario$m
   deltas<-c(scenario$delta1,scenario$delta2)
   rho01<-matrix(c(scenario$rho01.11,scenario$rho01.12,scenario$rho01.12,scenario$rho01.22),2)
+  rho02<-matrix(c(scenario$rho02.11,scenario$rho02.12,scenario$rho02.12,scenario$rho02.22),2)
   rho2<-matrix(c(1,scenario$rho2.12,scenario$rho2.12,1),2)
   
-  pred<-calPower_IU(deltas,margins=c(0,0),vars=c(1,1),rho01,rho2,N,t,m,K=2,alpha=0.05)
+  pred<-calPower_IU(deltas,margins=c(0,0),vars=c(4,4),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
   
   power.k <-cbind(pred$pred.power.t,pred$pred.power.z)
   
