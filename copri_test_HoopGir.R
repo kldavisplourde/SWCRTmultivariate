@@ -18,7 +18,7 @@ if (is.na(ncores)) ncores<-1
 registerDoMC(cores=ncores)
 
 # define scenarios
-scenarios <- read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/HoopGir/Preliminary/Prelim_Sim_params_HoopGir.txt", header=TRUE, sep="")
+scenarios <- read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/HoopGir/Sim_Params.txt", header=TRUE, sep="")
 scenarios <- subset(scenarios, scenario == k)
 
 scenario <- k
@@ -29,7 +29,7 @@ eff<-c(scenarios$delta1,scenarios$delta2)
 rho01<-matrix(c(scenarios$rho01.11,scenarios$rho01.12,scenarios$rho01.12,scenarios$rho01.22),2)
 rho02<-matrix(c(scenarios$rho02.11,scenarios$rho02.12,scenarios$rho02.12,scenarios$rho02.22),2)
 rho2<-matrix(c(1,scenarios$rho2.12,scenarios$rho2.12,1),2)
-vars<-c(1,1) #c(scenarios$var1,scenarios$var2)
+vars<-c(4,4) #c(scenarios$var1,scenarios$var2)
 bs <- 0
 beta <- cumsum(c(0.1,0.1*0.5,0.1*(0.5^2),0.1*(0.5^3),0.1*(0.5^4),0.1*(0.5^5)))[1:t-1]
 nsim<-2
@@ -65,7 +65,11 @@ while(i<nsim){
   }
   
   param<-try(EM.estim(data,lme1,lme2,cluster="cluster",cluster.period="cluster.period",maxiter=500, epsilon=1e-4, verbose=FALSE))
-  if(param$SEcheck=="ERROR"|anyNA(param$theta$zeta)==TRUE|anyNA(param$theta$SigmaE)==TRUE|anyNA(param$theta$SigmaPhi)==TRUE|anyNA(param$theta$SigmaPsi)==TRUE){i<- i-1;fail_count <-fail_count+1}
+  if(class(param)=="try-error"){
+    i<- i-1;fail_count <-fail_count+1
+  }else{
+    if(param$SEcheck=="ERROR"|anyNA(param$theta$zeta)==TRUE|anyNA(param$theta$SigmaE)==TRUE|anyNA(param$theta$SigmaPhi)==TRUE|anyNA(param$theta$SigmaPsi)==TRUE){i<- i-1;fail_count <-fail_count+1}
+  }
   if(fail_count > max_fail){break}
   if(i<itemp){next}
   
