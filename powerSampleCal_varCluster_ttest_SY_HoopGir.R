@@ -133,7 +133,7 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
 }
 
 #Sim Study Development
-sd<-2
+#sd<-2
 #rho2<-matrix(c(1,0.2,0.2,1),2)
   #rho02<-matrix(c(0.02,0.01,0.01,0.02),2);rho01<-matrix(c(0.01,0.005,0.005,0.01),2);deltas<-c(0.86*sd,0.71*sd);t<-3;N=(t-1)*4;m<-13
   #rho02<-matrix(c(0.02,0.01,0.01,0.1),2);rho01<-matrix(c(0.01,0.005,0.005,0.05),2);deltas<-c(0.6*sd,0.78*sd);t<-5;N=(t-1)*2;m<-8
@@ -160,7 +160,6 @@ sd<-2
   #rho02<-matrix(c(0.2,0.05,0.05,0.1),2);rho01<-matrix(c(0.1,0.025,0.025,0.05),2);deltas<-c(0.4*sd,0.4*sd);t<-4;N=(t-1)*9;m<-11
   #rho02<-matrix(c(0.2,0.1,0.1,0.2),2);rho01<-matrix(c(0.1,0.05,0.05,0.1),2);deltas<-c(0.32*sd,0.84*sd);t<-5;N=(t-1)*6;m<-24
   
-  
 #rho2<-matrix(c(1,0.8,0.8,1),2)
   #rho02<-matrix(c(0.02,0.01,0.01,0.02),2);rho01<-matrix(c(0.01,0.005,0.005,0.01),2);deltas<-c(0.24*sd,0.55*sd);t<-5;N=(t-1)*4;m<-20
   #rho02<-matrix(c(0.02,0.01,0.01,0.1),2);rho01<-matrix(c(0.01,0.005,0.005,0.05),2);deltas<-c(0.29*sd,0.57*sd);t<-3;N=(t-1)*15;m<-14
@@ -174,7 +173,7 @@ sd<-2
   #rho02<-matrix(c(0.2,0.05,0.05,0.1),2);rho01<-matrix(c(0.1,0.025,0.025,0.05),2);deltas<-c(0.63*sd,0.31*sd);t<-4;N=(t-1)*8;m<-17
   #rho02<-matrix(c(0.2,0.1,0.1,0.2),2);rho01<-matrix(c(0.1,0.05,0.05,0.1),2);deltas<-c(0.82*sd,0.82*sd);t<-5;N=(t-1)*2;m<-10
 
-calPower_IU(deltas,margins=c(0,0),vars=c(4,4),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+#calPower_IU(deltas,margins=c(0,0),vars=c(4,4),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
 
 #check
 scenarios<-read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/HoopGir/Sim_Params.txt", header=TRUE, sep="")
