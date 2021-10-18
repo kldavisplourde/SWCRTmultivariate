@@ -196,6 +196,26 @@ for(k in 1:27){
   power<-rbind(power,power.k)
 }
 
+# Naive
+power<-NULL
+for(k in 1:27){
+  scenario <- subset(scenarios, scenario == k)
+  
+  t <- scenario$t
+  N <- scenario$N
+  m <- scenario$m
+  deltas<-c(scenario$delta1,scenario$delta2)
+  rho01<-matrix(c(scenario$rho01.11,0,0,scenario$rho01.22),2)
+  rho02<-matrix(c(scenario$rho02.11,0,0,scenario$rho02.22),2)
+  rho2<-matrix(c(1,0,0,1),2)
+  
+  pred<-calPower_IU(deltas,margins=c(0,0),vars=c(4,4),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+  
+  power.k <-cbind(pred$pred.power.t,pred$pred.power.z)
+  
+  power<-rbind(power,power.k)
+}
+
 
 
 
