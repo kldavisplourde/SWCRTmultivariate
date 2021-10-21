@@ -27,6 +27,9 @@ library(mvtnorm)
 ####Critical values c_1,...,c_K are set to t_alpha, (1-alpha)th quantile of the t distribution with df = N-2K###
 calPower_IU <- function(deltas,margins,vars,rho01,rho2,N,t,m,K,alpha)
 {
+  # Common treatment effects?
+  if(length(deltas)==1){common.treat.eff <- 1} else {common.treat.eff <- 0}
+  
   # Create X matrix
   X<-NULL
   trtSeq<-matrix(0,t-1,t)
@@ -78,8 +81,14 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho2,N,t,m,K,alpha)
     #covMatrix <- 1/(m*sigmaz.square)*(sigmaE+m*sigmaP)%*%tmp
     #covMatrix <- (covMatrix +t(covMatrix))/2  # symmerize the off-diagonal
   #Stepped wedge
-    covMatrix <- (N/(m*(N*U-W)))*(sigmaE-((U^2-N*V)/(U^2+N*t*U-t*W-N*V))*solve(solve(sigmaE)+((N*U-W)/(m*(U^2+N*t*U-t*W-N*V)))*solve(sigmaP)))
-    #covMatrix <- N*t*solve(m*(U^2+N*t*U-t*W-N*V)*solve(sigmaE)+(N*V-U^2)*solve(t*sigmaP+(1/m)*sigmaE))
+    if(common.treat.eff == 1){
+      sde <- matrix(c(sqrt(sigmaE[1,1]),sqrt(sigmaE[2,2])),2,1)
+      covMatrix <- N*t*solve(m*(U^2+N*t*U-t*W-N*V)*t(sde)%*%solve(sigmaE)%*%sde+(N*V-U^2)*t(sde)%*%solve(t*sigmaP+(1/m)*sigmaE)%*%sde)
+    } else {
+      #covMatrix <- (N/(m*(N*U-W)))*(sigmaE-((U^2-N*V)/(U^2+N*t*U-t*W-N*V))*solve(solve(sigmaE)+((N*U-W)/(m*(U^2+N*t*U-t*W-N*V)))*solve(sigmaP)))
+      covMatrix <- N*t*solve(m*(U^2+N*t*U-t*W-N*V)*solve(sigmaE)+(N*V-U^2)*solve(t*sigmaP+(1/m)*sigmaE))
+    }
+    
     return(covMatrix)  
   }
   
@@ -100,16 +109,24 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho2,N,t,m,K,alpha)
     }
     return(wCor)
   }
-  sigmaks.sq <- diag( calCovbetas(vars,rho01,rho2))
+  sigmaks.sq <- diag(calCovbetas(vars,rho01,rho2))
   #meanVector <- sqrt(N)*(deltas-margins)/sqrt(sigmaks.sq)
   meanVector <- (deltas-margins)/sqrt(sigmaks.sq)
-  wCor <- calCorWks(vars,rho01,rho2)
-  criticalValue.t <- qt(p=(1-alpha), df=(N-2*K))
-  criticalValue.n <- qnorm(p=(1-alpha))
-  pred.power.t <- pmvt(lower = rep(criticalValue.t,K),upper=rep(Inf,K),df = (N-2*K), sigma = wCor,delta=meanVector)[1]
-  pred.power.n <- pmvnorm(lower = rep(criticalValue.n,K),upper=rep(Inf,K), sigma = wCor,mean=meanVector)[1]
   
-  param <- list(vard=c(sigmaks.sq),pred.power.t=pred.power.t,pred.power.z=pred.power.n)
+  if(common.treat.eff == 1){
+    criticalValue.t <- qt(p=(1-alpha), df=(N-K-1))
+    criticalValue.z <- qnorm(p=(1-alpha))
+    pred.power.t <- 1-pt(criticalValue.t, df=(N-K-1), meanVector)
+    pred.power.z <- 1-pnorm(criticalValue.z, mean=meanVector)
+  } else {
+    wCor <- calCorWks(vars,rho01,rho2)
+    criticalValue.t <- qt(p=(1-alpha), df=(N-2*K))
+    criticalValue.z <- qnorm(p=(1-alpha))
+    pred.power.t <- pmvt(lower = rep(criticalValue.t,K),upper=rep(Inf,K),df = (N-2*K), sigma = wCor,delta=meanVector)[1]
+    pred.power.z <- pmvnorm(lower = rep(criticalValue.z,K),upper=rep(Inf,K), sigma = wCor,mean=meanVector)[1]
+  }
+  
+  param <- list(vard=c(sigmaks.sq),pred.power.t=pred.power.t,pred.power.z=pred.power.z)
   return(param)
 }
 
@@ -201,6 +218,17 @@ for(k in 1:27){
   power<-rbind(power,power.k)
 }
 
+# Common treatment effects
+scenarios<-read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/HH/Sim_Params.txt", header=TRUE, sep="")
+scenario <- subset(scenarios, scenario == 23)
+t <- scenario$t
+N <- scenario$N
+m <- scenario$m
+deltas<-scenario$delta1
+rho01<-matrix(c(scenario$rho01.11,scenario$rho01.12,scenario$rho01.12,scenario$rho01.22),2)
+rho2<-matrix(c(1,scenario$rho2.12,scenario$rho2.12,1),2)
+
+calPower_IU(deltas,margins=0,vars=c(1,1.2),rho01,rho2,N,t,m,K=2,alpha=0.05)
 
 
 

@@ -33,6 +33,9 @@ library(mvtnorm)
 ####Critical values c_1,...,c_K are set to t_alpha, (1-alpha)th quantile of the t distribution with df = N-2K###
 calPower_IU <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
 {
+  # Common treatment effects?
+  if(length(deltas)==1){common.treat.eff <- 1} else {common.treat.eff <- 0}
+  
   # Create X matrix
   X<-NULL
   trtSeq<-matrix(0,t-1,t)
@@ -99,8 +102,14 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
     sigmaP <- constrRiP(rho01,K,vars)
     sigmaPs <- constrRiPs(rho01,rho02,K,vars)
   #Stepped wedge
-    #covMatrix <- ((N*t)/(N*t*U-t*W+U^2-N*V))*solve(solve(sigmaPs+(1/m)*sigmaE)+((N*V-U^2)/(N*t*U-t*W+U^2-N*V))*solve(t*sigmaP+sigmaPs+(1/m)*sigmaE))
-    covMatrix <- N*t*solve((N*t*U-t*W+U^2-N*V)*solve(sigmaPs +(1/m)*sigmaE)-(U^2-N*V)*solve(t*sigmaP+sigmaPs+(1/m)*sigmaE))
+    if(common.treat.eff == 1){
+      sde <- matrix(c(sqrt(sigmaE[1,1]),sqrt(sigmaE[2,2])),2,1)
+      covMatrix <- N*t*solve((N*t*U-t*W+U^2-N*V)*t(sde)%*%solve(sigmaPs +(1/m)*sigmaE)%*%sde-(U^2-N*V)*t(sde)%*%solve(t*sigmaP+sigmaPs+(1/m)*sigmaE)%*%sde)
+    } else {
+      #covMatrix <- ((N*t)/(N*t*U-t*W+U^2-N*V))*solve(solve(sigmaPs+(1/m)*sigmaE)+((N*V-U^2)/(N*t*U-t*W+U^2-N*V))*solve(t*sigmaP+sigmaPs+(1/m)*sigmaE))
+      covMatrix <- N*t*solve((N*t*U-t*W+U^2-N*V)*solve(sigmaPs +(1/m)*sigmaE)-(U^2-N*V)*solve(t*sigmaP+sigmaPs+(1/m)*sigmaE))
+    }
+    
     return(covMatrix)  
   }
   
@@ -122,24 +131,32 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
   }
   sigmaks.sq <- diag(calCovbetas(vars,rho01,rho02,rho2))
   meanVector <- (deltas-margins)/sqrt(sigmaks.sq)
-  wCor <- calCorWks(vars,rho01,rho02,rho2)
-  criticalValue.t <- qt(p=(1-alpha), df=(N-2*K))
-  criticalValue.n <- qnorm(p=(1-alpha))
-  pred.power.t <- pmvt(lower = rep(criticalValue.t,K),upper=rep(Inf,K),df = (N-2*K), sigma = wCor,delta=meanVector)[1]
-  pred.power.n <- pmvnorm(lower = rep(criticalValue.n,K),upper=rep(Inf,K), sigma = wCor,mean=meanVector)[1]
   
-  param <- list(vard=c(sigmaks.sq),pred.power.t=pred.power.t,pred.power.z=pred.power.n)
+  if(common.treat.eff == 1){
+    criticalValue.t <- qt(p=(1-alpha), df=(N-K-1))
+    criticalValue.z <- qnorm(p=(1-alpha))
+    pred.power.t <- 1-pt(criticalValue.t, df=(N-K-1), meanVector)
+    pred.power.z <- 1-pnorm(criticalValue.z, mean=meanVector)
+  } else {
+    wCor <- calCorWks(vars,rho01,rho02,rho2)
+    criticalValue.t <- qt(p=(1-alpha), df=(N-2*K))
+    criticalValue.z <- qnorm(p=(1-alpha))
+    pred.power.t <- pmvt(lower = rep(criticalValue.t,K),upper=rep(Inf,K),df = (N-2*K), sigma = wCor,delta=meanVector)[1]
+    pred.power.z <- pmvnorm(lower = rep(criticalValue.z,K),upper=rep(Inf,K), sigma = wCor,mean=meanVector)[1]
+  }
+  
+  param <- list(vard=c(sigmaks.sq),pred.power.t=pred.power.t,pred.power.z=pred.power.z)
   return(param)
 }
 
 #Sim Study Development
 #sd<-2
 #rho2<-matrix(c(1,0.2,0.2,1),2)
-  #rho02<-matrix(c(0.02,0.01,0.01,0.02),2);rho01<-matrix(c(0.01,0.005,0.005,0.01),2);deltas<-c(0.86*sd,0.71*sd);t<-3;N=(t-1)*4;m<-13
-  #rho02<-matrix(c(0.02,0.01,0.01,0.1),2);rho01<-matrix(c(0.01,0.005,0.005,0.05),2);deltas<-c(0.6*sd,0.78*sd);t<-5;N=(t-1)*2;m<-8
-  #rho02<-matrix(c(0.02,0.01,0.01,0.2),2);rho01<-matrix(c(0.01,0.005,0.005,0.1),2);deltas<-c(0.45*sd,0.92*sd);t<-4;N=(t-1)*3;m<-15
+  #rho02<-matrix(c(0.02,0.01,0.01,0.02),2);rho01<-matrix(c(0.01,0.005,0.005,0.01),2);deltas<-c(0.5*sd,0.5*sd);t<-3;N=(t-1)*5;m<-25  #changed N from 8 to 10 and deltas/changed N to 20
+  #rho02<-matrix(c(0.02,0.01,0.01,0.1),2);rho01<-matrix(c(0.01,0.005,0.005,0.05),2);deltas<-c(0.2*sd,0.28*sd);t<-5;N=(t-1)*6;m<-25     #changed N from 8 to 12 and deltas/changed N to 24 
+  #rho02<-matrix(c(0.02,0.01,0.01,0.2),2);rho01<-matrix(c(0.01,0.005,0.005,0.1),2);deltas<-c(0.29*sd,0.36*sd);t<-4;N=(t-1)*8;m<-25     #changed N from 9 to 12 and deltas/changed N to 24
   
-  #rho02<-matrix(c(0.1,0.01,0.01,0.02),2);rho01<-matrix(c(0.05,0.005,0.005,0.01),2);deltas<-c(0.82*sd,0.65*sd);t<-5;N=(t-1)*2;m<-7
+  #rho02<-matrix(c(0.1,0.01,0.01,0.02),2);rho01<-matrix(c(0.05,0.005,0.005,0.01),2);deltas<-c(0.26*sd,0.22*sd);t<-5;N=(t-1)*6;m<-25  #changed N from 8 to 12/changed N to 24
   #rho02<-matrix(c(0.1,0.05,0.05,0.1),2);rho01<-matrix(c(0.05,0.025,0.025,0.05),2);deltas<-c(0.49*sd,0.98*sd);t<-4;N=(t-1)*4;m<-15
   #rho02<-matrix(c(0.1,0.05,0.05,0.2),2);rho01<-matrix(c(0.05,0.025,0.025,0.1),2);deltas<-c(0.59*sd,0.99*sd);t<-3;N=(t-1)*6;m<-20
   
@@ -148,7 +165,7 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
   #rho02<-matrix(c(0.2,0.1,0.1,0.2),2);rho01<-matrix(c(0.1,0.05,0.05,0.1),2);deltas<-c(0.54*sd,0.81*sd);t<-4;N=(t-1)*4;m<-25
 
 #rho2<-matrix(c(1,0.5,0.5,1),2)
-  #rho02<-matrix(c(0.02,0.01,0.01,0.02),2);rho01<-matrix(c(0.01,0.005,0.005,0.01),2);deltas<-c(0.62*sd,0.53*sd);t<-4;N=(t-1)*5;m<-5
+  #rho02<-matrix(c(0.02,0.01,0.01,0.02),2);rho01<-matrix(c(0.01,0.005,0.005,0.01),2);deltas<-c(0.52*sd,0.43*sd);t<-4;N=(t-1)*5;m<-8     # changed m from 5 to 8 and deltas
   #rho02<-matrix(c(0.02,0.01,0.01,0.1),2);rho01<-matrix(c(0.01,0.005,0.005,0.05),2);deltas<-c(0.34*sd,0.88*sd);t<-3;N=(t-1)*8;m<-22
   #rho02<-matrix(c(0.02,0.01,0.01,0.2),2);rho01<-matrix(c(0.01,0.005,0.005,0.1),2);deltas<-c(0.24*sd,0.83*sd);t<-5;N=(t-1)*5;m<-13
   
@@ -198,7 +215,7 @@ for(k in 1:27){
 
 # Naive
 power<-NULL
-for(k in 1:27){
+for(k in 1:12){
   scenario <- subset(scenarios, scenario == k)
   
   t <- scenario$t
@@ -215,6 +232,22 @@ for(k in 1:27){
   
   power<-rbind(power,power.k)
 }
+
+# Common treatment effects
+scenarios<-read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/HoopGir/Sim_Params.txt", header=TRUE, sep="")
+scenario <- subset(scenarios, scenario == 8)
+t <- scenario$t
+N <- scenario$N
+m <- scenario$m
+deltas<-scenario$delta1
+rho01<-matrix(c(scenario$rho01.11,scenario$rho01.12,scenario$rho01.12,scenario$rho01.22),2)
+rho02<-matrix(c(scenario$rho02.11,scenario$rho02.12,scenario$rho02.12,scenario$rho02.22),2)
+rho2<-matrix(c(1,scenario$rho2.12,scenario$rho2.12,1),2)
+
+calPower_IU(deltas,margins=0,vars=c(4,4),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+
+qt(p=(1-0.05), df=(N-4))
+qnorm(p=(1-0.05))
 
 
 
