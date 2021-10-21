@@ -17,7 +17,7 @@ if (is.na(ncores)) ncores<-1
 registerDoMC(cores=ncores)
 
 # define scenarios
-scenarios <- read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/Sim_Params.txt", header=TRUE, sep="")
+scenarios <- read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/HH/Sim_Params.txt", header=TRUE, sep="")
 scenarios <- subset(scenarios, scenario == k)
 
 scenario <- k
