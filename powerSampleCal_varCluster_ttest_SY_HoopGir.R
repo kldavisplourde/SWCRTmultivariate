@@ -165,7 +165,7 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
   #rho02<-matrix(c(0.2,0.1,0.1,0.2),2);rho01<-matrix(c(0.1,0.05,0.05,0.1),2);deltas<-c(0.54*sd,0.81*sd);t<-4;N=(t-1)*4;m<-25
 
 #rho2<-matrix(c(1,0.5,0.5,1),2)
-  #rho02<-matrix(c(0.02,0.01,0.01,0.02),2);rho01<-matrix(c(0.01,0.005,0.005,0.01),2);deltas<-c(0.62*sd,0.47*sd);t<-4;N=(t-1)*3;m<-15
+  #rho02<-matrix(c(0.02,0.01,0.01,0.02),2);rho01<-matrix(c(0.01,0.005,0.005,0.01),2);deltas<-c(0.3*sd,0.28*sd);t<-4;N=(t-1)*10;m<-10
   #rho02<-matrix(c(0.02,0.01,0.01,0.1),2);rho01<-matrix(c(0.01,0.005,0.005,0.05),2);deltas<-c(0.34*sd,0.88*sd);t<-3;N=(t-1)*8;m<-22
   #rho02<-matrix(c(0.02,0.01,0.01,0.2),2);rho01<-matrix(c(0.01,0.005,0.005,0.1),2);deltas<-c(0.42*sd,0.83*sd);t<-5;N=(t-1)*2;m<-20
   
@@ -173,20 +173,20 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
   #rho02<-matrix(c(0.1,0.05,0.05,0.1),2);rho01<-matrix(c(0.05,0.025,0.025,0.05),2);deltas<-c(0.52*sd,0.68*sd);t<-5;N=(t-1)*2;m<-25
   #rho02<-matrix(c(0.1,0.05,0.05,0.2),2);rho01<-matrix(c(0.05,0.025,0.025,0.1),2);deltas<-c(0.62*sd,0.62*sd);t<-3;N=(t-1)*11;m<-8
 
-  #rho02<-matrix(c(0.2,0.01,0.01,0.02),2);rho01<-matrix(c(0.1,0.005,0.005,0.01),2);deltas<-c(0.95*sd,1*sd);t<-3;N=(t-1)*4;m<-25
+  #rho02<-matrix(c(0.2,0.01,0.01,0.02),2);rho01<-matrix(c(0.1,0.005,0.005,0.01),2);deltas<-c(0.83*sd,0.9*sd);t<-3;N=(t-1)*5;m<-20
   #rho02<-matrix(c(0.2,0.05,0.05,0.1),2);rho01<-matrix(c(0.1,0.025,0.025,0.05),2);deltas<-c(0.6*sd,0.6*sd);t<-4;N=(t-1)*4;m<-16
   #rho02<-matrix(c(0.2,0.1,0.1,0.2),2);rho01<-matrix(c(0.1,0.05,0.05,0.1),2);deltas<-c(0.32*sd,0.84*sd);t<-5;N=(t-1)*6;m<-24
   
 #rho2<-matrix(c(1,0.8,0.8,1),2)
-  #rho02<-matrix(c(0.02,0.01,0.01,0.02),2);rho01<-matrix(c(0.01,0.005,0.005,0.01),2);deltas<-c(0.43*sd,0.65*sd);t<-5;N=(t-1)*2;m<-16
+  #rho02<-matrix(c(0.02,0.01,0.01,0.02),2);rho01<-matrix(c(0.01,0.005,0.005,0.01),2);deltas<-c(0.31*sd,0.55*sd);t<-5;N=(t-1)*3;m<-16
   #rho02<-matrix(c(0.02,0.01,0.01,0.1),2);rho01<-matrix(c(0.01,0.005,0.005,0.05),2);deltas<-c(0.29*sd,0.57*sd);t<-3;N=(t-1)*15;m<-14
-  #rho02<-matrix(c(0.02,0.01,0.01,0.2),2);rho01<-matrix(c(0.01,0.005,0.005,0.1),2);deltas<-c(0.44*sd,0.84*sd);t<-4;N=(t-1)*3;m<-20
+  #rho02<-matrix(c(0.02,0.01,0.01,0.2),2);rho01<-matrix(c(0.01,0.005,0.005,0.1),2);deltas<-c(0.34*sd,0.84*sd);t<-4;N=(t-1)*4;m<-20
 
   #rho02<-matrix(c(0.1,0.01,0.01,0.02),2);rho01<-matrix(c(0.05,0.005,0.005,0.01),2);deltas<-c(0.31*sd,0.62*sd);t<-5;N=(t-1)*5;m<-13
   #rho02<-matrix(c(0.1,0.05,0.05,0.1),2);rho01<-matrix(c(0.05,0.025,0.025,0.05),2);deltas<-c(0.82*sd,0.92*sd);t<-3;N=(t-1)*4;m<-22
   #rho02<-matrix(c(0.1,0.05,0.05,0.2),2);rho01<-matrix(c(0.05,0.025,0.025,0.1),2);deltas<-c(0.45*sd,0.45*sd);t<-4;N=(t-1)*6;m<-18
 
-  #rho02<-matrix(c(0.2,0.01,0.01,0.02),2);rho01<-matrix(c(0.1,0.005,0.005,0.01),2);deltas<-c(1*sd,0.47*sd);t<-3;N=(t-1)*5;m<-25
+  #rho02<-matrix(c(0.2,0.01,0.01,0.02),2);rho01<-matrix(c(0.1,0.005,0.005,0.01),2);deltas<-c(0.9*sd,0.45*sd);t<-3;N=(t-1)*6;m<-20
   #rho02<-matrix(c(0.2,0.05,0.05,0.1),2);rho01<-matrix(c(0.1,0.025,0.025,0.05),2);deltas<-c(0.63*sd,0.31*sd);t<-4;N=(t-1)*8;m<-17
   #rho02<-matrix(c(0.2,0.1,0.1,0.2),2);rho01<-matrix(c(0.1,0.05,0.05,0.1),2);deltas<-c(0.82*sd,0.82*sd);t<-5;N=(t-1)*2;m<-10
 
@@ -195,8 +195,10 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
 #check
 #scenarios<-read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/HoopGir/Sim_Params.txt", header=TRUE, sep="")
 #scenarios<-read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/HoopGir/Sim_Params_AdditionalScenarios.txt", header=TRUE, sep="")
+#scenarios<-read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/HoopGir/Sim_Params_AdditionalScenarios2.txt", header=TRUE, sep="")
+#scenarios<-read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/HoopGir/Sim_Params_Final.txt", header=TRUE, sep="")
 "power<-NULL
-for(k in 1:9){
+for(k in 1:27){
   scenario <- subset(scenarios, scenario == k)
   
   t <- scenario$t
@@ -249,6 +251,13 @@ calPower_IU(deltas,margins=0,vars=c(4,4),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
 
 qt(p=(1-0.05), df=(N-4))
 qnorm(p=(1-0.05))"
+
+# Application Study
+sd1<-sqrt(573.41)
+sd2<-sqrt(712.9)
+rho2<-matrix(c(1,0.56,0.56,1),2)
+rho02<-matrix(c(0.013,0.003,0.003,0.05),2);rho01<-matrix(c(0.00002,0.00001,0.00001,0.05),2);deltas<-c(0.1*sd1,0.1*sd2);t<-5;N=(t-1)*11;m<-50
+calPower_IU(deltas,margins=c(0,0),vars=c(573.41,712.9),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
 
 
 
