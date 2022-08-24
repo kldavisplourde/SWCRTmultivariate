@@ -145,8 +145,7 @@ if(t==5){
                              "Intercept.se2","Period2.se2","Period3.se2","Period4.se2","Period5.se2","Treatment.se2")
 }
 
-if(sum(eff)==0) analysis<-"error"
-if(sum(eff) != 0) analysis<-"power"
+if(0 %in% eff) analysis<-"error" else analysis<-"power"
 
 simData <- as.data.frame(simData)
 naive.simData <- as.data.frame(naive.simData)
