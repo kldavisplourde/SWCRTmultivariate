@@ -1,6 +1,6 @@
 library(mvtnorm)
 ########################################################################################################################################################
-##Power/Sample Size Calculation based on the t test##
+##Power/Sample Size Calculation based on the t-test for intersection-union test.##
 # INPUT
 # deltas: (delta_1,...,delta_K), the vector of treatment effect for (1st,...,Kth) endpoints
 # margins: (margin_1,...,margin_K), the vector of non-inferiority margins, when delta_1 = ... = delta_K = 0,
