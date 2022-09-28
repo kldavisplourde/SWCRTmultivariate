@@ -5,7 +5,8 @@ List of Files:
 2) copri_test_HoopGir.r = R file for conducting the Simulation study.
 3) EM_uncorrected_HoopGir.r = R file for EM Algorithm (used to fit MLMM).
 4) gendata_copri_varCluster_HoopGir.r = R file for generating the Simulation study data.
-5) powerSampleCal_IU_HoopGir.r = R file for generating the power and sample size for the MLMM under a SW-CRT design.
+5) powerSampleCal_IU_HoopGir.r = R file for generating the power and sample size for the MLMM under a SW-CRT design using the intersection-union test.
+6) powerSampleCal_omnibus_HoopGir.r = R file for generating the power and sample size for the MLMM under a SW-CRT design using the omnibus test..
 
 NOTES:  1) This program requires the MASS package (comes preloaded into R so does not require installation). Simulation study additionally requires the installation of the lme4, doMC, doRNG, lmeInfo, mvtnorm, and numDeriv packages. Finally, the power and sample size function requires the installation of the mvtnorm package.
 	2) You will need to change path names before running the programs. 
