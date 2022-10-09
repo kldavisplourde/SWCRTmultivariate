@@ -168,15 +168,15 @@ calPower_ttestIU <- function(betas,deltas,vars,rho01,rho2,N,r,m,K,alpha)
   return(pred.power)
 }
 
-# What if we assume a parallel CRT design in our study using our current inputs?
+# What if we assume a parallel-arm CRT design in our study using our current inputs?
 ## Parameter Inputs
 sd1<-sqrt(611.13)
 sd2<-sqrt(695.73)
 rho2<-matrix(c(1,0.58,0.58,1),2)
-rho02<-matrix(c(0.006,0,0,0.029),2);rho01<-matrix(c(0.00002,0,0,0.0068),2);betas<-c(0.3*sd1,0.35*sd2);N=(t-1)*4;m<-12
+rho02<-matrix(c(0.006,0,0,0.029),2);rho01<-matrix(c(0.00002,0,0,0.0068),2);deltas<-c(0.3*sd1,0.35*sd2);t<-5;N=(t-1)*4;m<-12*t
 
 calPower_ttestIU(betas,deltas=c(0,0),vars=c(sd1^2,sd2^2),rho01=rho01,rho2=rho2,N,r=0.5,m,K=2,alpha=0.05)
-# Same design parameters in a parallel RCT only has 53.2% power under IU-test
+# Same design parameters in a parallel RCT only has 99.3% power under IU-test
 
 
 
@@ -234,15 +234,15 @@ calPower_Omnibus <- function(beta, vars,rho01,rho2,N, cv, m,r=0.5, K=2, alpha=0.
   return(power)
 }
 
-# What if we assume a parallel CRT design in our study using our current inputs?
+# What if we assume a parallel-arm CRT design in our study using our current inputs?
 ## Parameter Inputs
 sd1<-sqrt(611.13)
 sd2<-sqrt(695.73)
 rho2<-matrix(c(1,0.58,0.58,1),2)
-rho01<-matrix(c(0.00002,0,0,0.0068),2);beta<-c(0.052*sd1,0.102*sd2);N=(t-1)*4;m<-12
+rho01<-matrix(c(0.00002,0,0,0.0068),2);beta<-c(0.052*sd1,0.102*sd2);t<-5;N=(t-1)*4;m<-12*t
 
 calPower_Omnibus(beta,vars=c(sd1^2,sd2^2),rho01=rho01,rho2=rho2,N,cv=0,m,r=0.5,K=2,alpha=0.05)
-# Using standardized effect sizes of 0.052 and 0.102 gives only 7.9% power compared to the 86.4% power under SW-CRT.
+# Using standardized effect sizes of 0.052 and 0.102 gives only 17.1% power compared to the 86.4% power under SW-CRT.
 
 
 
