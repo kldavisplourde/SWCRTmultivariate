@@ -9,100 +9,100 @@ source("/Users/kdavis07/Documents/GitHub/CoPrimarySWCRT/powerSampleCal_omnibus_H
 sd1<-sqrt(611.13)
 sd2<-sqrt(695.73)
 rho2<-matrix(c(1,0.58,0.58,1),2)
-rho02<-matrix(c(0.006,0,0,0.029),2);rho01<-matrix(c(0.00002,0,0,0.0068),2);deltas<-c(0.3*sd1,0.35*sd2);t<-5;N=(t-1)*4;m<-12
+rho0<-matrix(c(0.006,0,0,0.029),2);rho1<-matrix(c(0.00002,0,0,0.0068),2);deltas<-c(0.3*sd1,0.35*sd2);t<-5;N=(t-1)*4;m<-12
 
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 # I=16 and N=12 gives 86.3% power
 
 
 ##### Sensitivity Analysis for Application Study - IU-test #####
 ### CAC=0.2
-rho01<-matrix(c(0.00122,0,0,0.0059),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho1<-matrix(c(0.00122,0,0,0.0059),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### CAC=0.5
-rho01<-matrix(c(0.003,0,0,0.015),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho1<-matrix(c(0.003,0,0,0.015),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_0^{12} = -0.002
-rho01<-matrix(c(0.00122,0,0,0.0059),2)
-rho02<-matrix(c(0.006,-0.002,-0.002,0.029),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho1<-matrix(c(0.00122,0,0,0.0059),2) #reset
+rho0<-matrix(c(0.006,-0.002,-0.002,0.029),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_0^{12} = 0.002
-rho02<-matrix(c(0.006,0.002,0.002,0.029),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho0<-matrix(c(0.006,0.002,0.002,0.029),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_0^{2} = 0.023
-rho02<-matrix(c(0.006,0,0,0.023),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho0<-matrix(c(0.006,0,0,0.023),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_0^{2} = 0.035
-rho02<-matrix(c(0.006,0,0,0.035),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho0<-matrix(c(0.006,0,0,0.035),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_0^{1} = 0.005
-rho02<-matrix(c(0.005,0,0,0.029),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho0<-matrix(c(0.005,0,0,0.029),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_0^{1} = 0.007
-rho02<-matrix(c(0.007,0,0,0.029),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho0<-matrix(c(0.007,0,0,0.029),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_2^{12} = 0.46
-rho02<-matrix(c(0.006,0,0,0.029),2)
+rho0<-matrix(c(0.006,0,0,0.029),2) #reset
 rho2<-matrix(c(1,0.46,0.46,1),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_2^{12} = 0.7
 rho2<-matrix(c(1,0.7,0.7,1),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 
 #Additional scenarios (up to 40%) - don't forget to reset parameters before running
 ### CAC=0
-rho01<-matrix(c(0,0,0,0),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho1<-matrix(c(0,0,0,0),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### CAC=0.8
-rho01<-matrix(c(0.0049,0,0,0.0235),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho1<-matrix(c(0.0049,0,0,0.0235),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_0^{12} = -0.004
-rho01<-matrix(c(0.00122,0,0,0.0059),2)
-rho02<-matrix(c(0.006,-0.004,-0.004,0.029),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho1<-matrix(c(0.00122,0,0,0.0059),2) #reset
+rho0<-matrix(c(0.006,-0.004,-0.004,0.029),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_0^{12} = 0.004
-rho02<-matrix(c(0.006,0.004,0.004,0.029),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho0<-matrix(c(0.006,0.004,0.004,0.029),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_0^{2} = 0.017
-rho02<-matrix(c(0.006,0,0,0.017),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho0<-matrix(c(0.006,0,0,0.017),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_0^{2} = 0.041
-rho02<-matrix(c(0.006,0,0,0.041),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho0<-matrix(c(0.006,0,0,0.041),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_0^{1} = 0.004
-rho02<-matrix(c(0.004,0,0,0.029),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho0<-matrix(c(0.004,0,0,0.029),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_0^{1} = 0.008
-rho02<-matrix(c(0.008,0,0,0.029),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho0<-matrix(c(0.008,0,0,0.029),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_2^{12} = 0.35
-rho02<-matrix(c(0.006,0,0,0.029),2)
+rho0<-matrix(c(0.006,0,0,0.029),2) #reset
 rho2<-matrix(c(1,0.35,0.35,1),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_2^{12} = 0.81
 rho2<-matrix(c(1,0.81,0.81,1),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 
 #Additional scenarios x2 (up to 60%) - don't forget to reset parameters before running
 ### rho_0^{2} = 0.012
-rho02<-matrix(c(0.006,0,0,0.012),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho0<-matrix(c(0.006,0,0,0.012),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_0^{2} = 0.046
-rho02<-matrix(c(0.006,0,0,0.046),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho0<-matrix(c(0.006,0,0,0.046),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_0^{1} = 0.002
-rho02<-matrix(c(0.002,0,0,0.029),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho0<-matrix(c(0.002,0,0,0.029),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_0^{1} = 0.010
-rho02<-matrix(c(0.010,0,0,0.029),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+rho0<-matrix(c(0.010,0,0,0.029),2)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_2^{12} = 0.23
-rho02<-matrix(c(0.006,0,0,0.029),2)
+rho0<-matrix(c(0.006,0,0,0.029),2) #reset
 rho2<-matrix(c(1,0.23,0.23,1),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 ### rho_2^{12} = 0.93
 rho2<-matrix(c(1,0.93,0.93,1),2)
-calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 
 
 
@@ -111,9 +111,9 @@ calPower_IU(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2
 sd1<-sqrt(611.13)
 sd2<-sqrt(695.73)
 rho2<-matrix(c(1,0.58,0.58,1),2)
-rho02<-matrix(c(0.006,0,0,0.029),2);rho01<-matrix(c(0.00002,0,0,0.0068),2);deltas<-c(0.052*sd1,0.102*sd2);t<-5;N=(t-1)*4;m<-12
+rho0<-matrix(c(0.006,0,0,0.029),2);rho1<-matrix(c(0.00002,0,0,0.0068),2);deltas<-c(0.052*sd1,0.102*sd2);t<-5;N=(t-1)*4;m<-12
 
-calPower_omnibus(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho01,rho02,rho2,N,t,m,K=2,alpha=0.05)
+calPower_omnibus(deltas,margins=c(0,0),vars=c(sd1^2,sd2^2),rho0,rho1,rho2,N,t,m,K=2,alpha=0.05)
 # Can test for standardized effect sizes as small as 0.052 and 0.102 with 86.5% power.
 
 
@@ -172,10 +172,10 @@ calPower_ttestIU <- function(betas,deltas,vars,rho01,rho2,N,r,m,K,alpha)
 sd1<-sqrt(611.13)
 sd2<-sqrt(695.73)
 rho2<-matrix(c(1,0.58,0.58,1),2)
-rho02<-matrix(c(0.006,0,0,0.029),2);rho01<-matrix(c(0.00002,0,0,0.0068),2);betas<-c(0.3*sd1,0.35*sd2);t<-5;N=(t-1)*4;m<-12*t
+rho01<-matrix(c(0.006,0,0,0.029),2);betas<-c(0.3*sd1,0.35*sd2);t<-5;N=(t-1)*4;m<-12*t
 
 calPower_ttestIU(betas,deltas=c(0,0),vars=c(sd1^2,sd2^2),rho01=rho01,rho2=rho2,N,r=0.5,m,K=2,alpha=0.05)
-# Same design parameters in a parallel-arm CRT has 99.3% power under IU-test
+# Same design parameters in a parallel-arm CRT has 91.5% power under IU-test
 
 
 
@@ -237,10 +237,10 @@ calPower_Omnibus <- function(beta, vars,rho01,rho2,N, cv, m,r=0.5, K=2, alpha=0.
 sd1<-sqrt(611.13)
 sd2<-sqrt(695.73)
 rho2<-matrix(c(1,0.58,0.58,1),2)
-rho01<-matrix(c(0.00002,0,0,0.0068),2);beta<-c(0.052*sd1,0.102*sd2);t<-5;N=(t-1)*4;m<-12*t
+rho01<-matrix(c(0.006,0,0,0.029),2);beta<-c(0.052*sd1,0.102*sd2);t<-5;N=(t-1)*4;m<-12*t
 
 calPower_Omnibus(beta,vars=c(sd1^2,sd2^2),rho01=rho01,rho2=rho2,N,cv=0,m,r=0.5,K=2,alpha=0.05)
-# Using standardized effect sizes of 0.052 and 0.102 gives only 17.1% power compared to the 86.5% power under SW-CRT.
+# Using standardized effect sizes of 0.052 and 0.102 gives only 12.0% power compared to the 86.5% power under SW-CRT.
 
 
 
