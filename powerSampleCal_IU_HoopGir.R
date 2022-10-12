@@ -6,18 +6,18 @@ library(mvtnorm)
 # margins: (margin_1,...,margin_K), the vector of non-inferiority margins, when delta_1 = ... = delta_K = 0,
 #          superiority tests are performed on all endpoints
 # vars: (var_1,...,var_K), the vector of marginal variance for (1st,...,Kth) endpoints
-# rho01: a K by K dimensional matrix for the correlation parameters (rho1^k) and (rho1^kk')
-# For rho01: Endpoint-specific ICCs (between-period)
-#           the diagonal elements correspond to rho1^k's 
-#           the off-diagonal elements correspond to (rho1^kk')'s 
-#           For example, rho01[1,1] corresponds to rho1^1, which is the between-period ICC for the first endpoint
-#                        rho01[1,2] corresponds to rho1^12, which is the between-period correlation of outcomes between subjects on the 1st and 2nd endpoints    
-# rho02: a K by K dimensional matrix for the correlation parameters (rho0^k) and (rho0^kk')
-# For rho02: Endpoint-specific ICCs (within-period)
+# rho0: a K by K dimensional matrix for the correlation parameters (rho0^k) and (rho0^kk')
+# For rho0: Endpoint-specific ICCs (within-period)
 #           the diagonal elements correspond to rho0^k's 
 #           the off-diagonal elements correspond to (rho0^kk')'s 
-#           For example, rho02[1,1] corresponds to rho0^1, which is the within-period ICC for the first endpoint
-#                        rho02[1,2] corresponds to rho0^12, which is the within-period correlation of outcomes between subjects on the 1st and 2nd endpoints    
+#           For example, rho0[1,1] corresponds to rho0^1, which is the within-period ICC for the first endpoint
+#                        rho0[1,2] corresponds to rho0^12, which is the within-period correlation of outcomes between subjects on the 1st and 2nd endpoints    
+# rho1: a K by K dimensional matrix for the correlation parameters (rho1^k) and (rho1^kk')
+# For rho1: Endpoint-specific ICCs (between-period)
+#           the diagonal elements correspond to rho1^k's 
+#           the off-diagonal elements correspond to (rho1^kk')'s 
+#           For example, rho1[1,1] corresponds to rho1^1, which is the between-period ICC for the first endpoint
+#                        rho1[1,2] corresponds to rho1^12, which is the between-period correlation of outcomes between subjects on the 1st and 2nd endpoints    
 # rho2: a K by K dimensional matrix for the correlation parameters (rho2^kk')
 # For rho2: Intra-subject ICC
 #           the diagonal elements are 1
@@ -31,7 +31,7 @@ library(mvtnorm)
 ########################################################################################################################################################
 ####Function to Calculate Power Given Design Configurations based on the t test and normal (intersection-union test)#######
 ####Critical values c_1,...,c_K are set to t_alpha, (1-alpha)th quantile of the t distribution with df = N-2K###
-calPower_IU <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
+calPower_IU <- function(deltas,margins,vars,rho0,rho1,rho2,N,t,m,K,alpha)
 {
   # Common treatment effects?
   if(length(deltas)==1){common.treat.eff <- 1} else {common.treat.eff <- 0}
@@ -49,15 +49,15 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
   W=sum((colSums(X))^2)
   
   #####function to construct covariance matrix Sigma_E for Y_i########
-  constrRiE <- function(rho02,rho2,K,vars)
-  { rho0k <- diag(rho02)
+  constrRiE <- function(rho0,rho2,K,vars)
+  { rho0k <- diag(rho0)
     SigmaE_Matrix <- diag((1-rho0k)*vars)
     for(row in 1:K )
     {
       for(col in 1:K)
       {
         if(row != col){
-          SigmaE_Matrix[row,col] <- sqrt(vars[row])*sqrt(vars[col])*(rho2[row,col]-rho02[row,col])
+          SigmaE_Matrix[row,col] <- sqrt(vars[row])*sqrt(vars[col])*(rho2[row,col]-rho0[row,col])
         }
       }
     }
@@ -65,15 +65,15 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
   }
   
   #####function to construct covariance matrix Sigma_phi for Y_i########
-  constrRiP <- function(rho01,K,vars)
-  { rho0k <- diag(rho01)
+  constrRiP <- function(rho1,K,vars)
+  { rho0k <- diag(rho1)
   SigmaP_Matrix <- diag(rho0k*vars)
   for(row in 1:K )
   {
     for(col in 1:K)
     {
       if(row != col){
-        SigmaP_Matrix[row,col] <- sqrt(vars[row])*sqrt(vars[col])*rho01[row,col]
+        SigmaP_Matrix[row,col] <- sqrt(vars[row])*sqrt(vars[col])*rho1[row,col]
       }
     }
   }
@@ -81,15 +81,15 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
   }
   
   #####function to construct covariance matrix Sigma_psi for Y_i########
-  constrRiPs <- function(rho01,rho02,K,vars)
-  { rho0k <- diag(rho02) - diag(rho01)
+  constrRiPs <- function(rho1,rho0,K,vars)
+  { rho0k <- diag(rho0) - diag(rho1)
   SigmaPs_Matrix <- diag(rho0k*vars)
   for(row in 1:K )
   {
     for(col in 1:K)
     {
       if(row != col){
-        SigmaPs_Matrix[row,col] <- sqrt(vars[row])*sqrt(vars[col])*(rho02[row,col]-rho01[row,col])
+        SigmaPs_Matrix[row,col] <- sqrt(vars[row])*sqrt(vars[col])*(rho0[row,col]-rho1[row,col])
       }
     }
   }
@@ -97,10 +97,10 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
   }
   
   ####Define function to calculate covariance between deltas#####
-  calCovbetas <- function(vars,rho01,rho02,rho2){
-    sigmaE <- constrRiE(rho02,rho2,K,vars)
-    sigmaP <- constrRiP(rho01,K,vars)
-    sigmaPs <- constrRiPs(rho01,rho02,K,vars)
+  calCovbetas <- function(vars,rho1,rho0,rho2){
+    sigmaE <- constrRiE(rho0,rho2,K,vars)
+    sigmaP <- constrRiP(rho1,K,vars)
+    sigmaPs <- constrRiPs(rho1,rho0,K,vars)
   #Stepped wedge
     if(common.treat.eff == 1){
       sde <- matrix(c(sqrt(sigmaE[1,1]),sqrt(sigmaE[2,2])),2,1)
@@ -114,9 +114,9 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
   }
   
   ####Define function to calculate correlation between test statistics #####
-  calCorWks <-  function(vars,rho01,rho02,rho2)
+  calCorWks <-  function(vars,rho1,rho0,rho2)
   {
-    top <- calCovbetas(vars,rho01,rho02,rho2)
+    top <- calCovbetas(vars,rho1,rho0,rho2)
     wCor <- diag(K)
     for(row in 1:K )
     {
@@ -129,7 +129,7 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
     }
     return(wCor)
   }
-  sigmaks.sq <- diag(calCovbetas(vars,rho01,rho02,rho2))
+  sigmaks.sq <- diag(calCovbetas(vars,rho1,rho0,rho2))
   meanVector <- (deltas-margins)/sqrt(sigmaks.sq)
   
   if(common.treat.eff == 1){
@@ -138,7 +138,7 @@ calPower_IU <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
     pred.power.t <- 1-pt(criticalValue.t, df=(N-K-1), meanVector)
     pred.power.z <- 1-pnorm(criticalValue.z, mean=meanVector)
   } else {
-    wCor <- calCorWks(vars,rho01,rho02,rho2)
+    wCor <- calCorWks(vars,rho1,rho0,rho2)
     criticalValue.t <- qt(p=(1-alpha), df=(N-2*K))
     criticalValue.z <- qnorm(p=(1-alpha))
     pred.power.t <- pmvt(lower = rep(criticalValue.t,K),upper=rep(Inf,K),df = (N-2*K), sigma = wCor,delta=meanVector)[1]
