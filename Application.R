@@ -173,7 +173,7 @@ calPower_ttestIU <- function(betas,deltas,vars,rho01,rho2,N,r,m,K,alpha)
 sd1<-sqrt(611.13)
 sd2<-sqrt(695.73)
 rho2<-matrix(c(1,0.58,0.58,1),2)
-rho02<-matrix(c(0.006,0,0,0.029),2);rho01<-matrix(c(0.00002,0,0,0.0068),2);deltas<-c(0.3*sd1,0.35*sd2);t<-5;N=(t-1)*4;m<-12*t
+rho02<-matrix(c(0.006,0,0,0.029),2);rho01<-matrix(c(0.00002,0,0,0.0068),2);betas<-c(0.3*sd1,0.35*sd2);t<-5;N=(t-1)*4;m<-12*t
 
 calPower_ttestIU(betas,deltas=c(0,0),vars=c(sd1^2,sd2^2),rho01=rho01,rho2=rho2,N,r=0.5,m,K=2,alpha=0.05)
 # Same design parameters in a parallel RCT only has 99.3% power under IU-test
