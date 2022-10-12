@@ -29,7 +29,7 @@ library(mvtnorm)
 # K: number of endpoints
 # alpha: upper bound of type I error rates over the whole null space
 ########################################################################################################################################################
-####Function to Calculate Power Given Design Configurations based on the t test and normal (alternative test)#######
+####Function to Calculate Power Given Design Configurations based on the t test and normal (omnibus test)#######
 ####Critical values c_1,...,c_K are set to t_alpha, (1-alpha)th quantile of the t distribution with df = N-2K###
 calPower_omnibus <- function(deltas,margins,vars,rho01,rho02,rho2,N,t,m,K,alpha)
 {
