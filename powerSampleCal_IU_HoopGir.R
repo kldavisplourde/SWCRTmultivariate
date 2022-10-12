@@ -6,26 +6,26 @@ library(mvtnorm)
 # margins: (margin_1,...,margin_K), the vector of non-inferiority margins, when delta_1 = ... = delta_K = 0,
 #          superiority tests are performed on all endpoints
 # vars: (var_1,...,var_K), the vector of marginal variance for (1st,...,Kth) endpoints
-# rho01: a K by K dimensional matrix for the correlation parameters (rho0^k) and (rho1^kk')
-# For rho01: cluster random effect
-#           the diagonal elements correspond to rho0^k's 
+# rho01: a K by K dimensional matrix for the correlation parameters (rho1^k) and (rho1^kk')
+# For rho01: Endpoint-specific ICCs (between-period)
+#           the diagonal elements correspond to rho1^k's 
 #           the off-diagonal elements correspond to (rho1^kk')'s 
-#           For example, rho01[1,1] corresponds to rho0^1, which is the ICC for the first endpoint
-#                        rho01[1,2] corresponds to rho1^12, which is the correlation of outcomes between subjects on the 1st and 2nd endpoints    
-# rho02: a K by K dimensional matrix for the correlation parameters (rho0^k) and (rho1^kk')
-# For rho02: cluster-period random effect
+#           For example, rho01[1,1] corresponds to rho1^1, which is the between-period ICC for the first endpoint
+#                        rho01[1,2] corresponds to rho1^12, which is the between-period correlation of outcomes between subjects on the 1st and 2nd endpoints    
+# rho02: a K by K dimensional matrix for the correlation parameters (rho0^k) and (rho0^kk')
+# For rho02: Endpoint-specific ICCs (within-period)
 #           the diagonal elements correspond to rho0^k's 
-#           the off-diagonal elements correspond to (rho1^kk')'s 
-#           For example, rho02[1,1] corresponds to rho0^1, which is the ICC for the first endpoint
-#                        rho02[1,2] corresponds to rho1^2, which is the correlation of outcomes between subjects on the 1st and 2nd endpoints    
+#           the off-diagonal elements correspond to (rho0^kk')'s 
+#           For example, rho02[1,1] corresponds to rho0^1, which is the within-period ICC for the first endpoint
+#                        rho02[1,2] corresponds to rho0^12, which is the within-period correlation of outcomes between subjects on the 1st and 2nd endpoints    
 # rho2: a K by K dimensional matrix for the correlation parameters (rho2^kk')
-# For rho2:
+# For rho2: Intra-subject ICC
 #           the diagonal elements are 1
 #           the off-diagonal elements correspond to (rho2^kk')'s
 #           For example, rho2[1,2] corresponds to rho2^12, which is the correlation of outcomes within same subject on the 1st and 2nd endpoints    
 # N: number of clusters
 # t: number of time periods
-# m: cluster size
+# m: cluster-period size
 # K: number of endpoints
 # alpha: upper bound of type I error rates over the whole null space
 ########################################################################################################################################################
