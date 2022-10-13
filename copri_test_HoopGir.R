@@ -1,5 +1,4 @@
 library(lme4)
-#library(nlme)
 library(doMC)
 library(doRNG)
 library(lmeInfo)
@@ -18,7 +17,7 @@ if (is.na(ncores)) ncores<-1
 registerDoMC(cores=ncores)
 
 # define scenarios
-scenarios <- read.table("/Users/kdavis07/Dropbox/SW-CRT Methods Development/2_CoPrimary/RCode/Simulations/HoopGir/Sim_Params.txt", header=TRUE, sep="")
+scenarios <- read.table("Sim_Params.txt", header=TRUE, sep="")
 scenarios <- subset(scenarios, scenario == k)
 
 scenario <- k
@@ -29,7 +28,7 @@ eff<-c(scenarios$delta1,scenarios$delta2)
 rho01<-matrix(c(scenarios$rho01.11,scenarios$rho01.12,scenarios$rho01.12,scenarios$rho01.22),2)
 rho02<-matrix(c(scenarios$rho02.11,scenarios$rho02.12,scenarios$rho02.12,scenarios$rho02.22),2)
 rho2<-matrix(c(1,scenarios$rho2.12,scenarios$rho2.12,1),2)
-vars<-c(4,4) #c(scenarios$var1,scenarios$var2)
+vars<-c(4,4)
 bs <- 0
 beta <- cumsum(c(0.1,0.1*0.5,0.1*(0.5^2),0.1*(0.5^3),0.1*(0.5^4),0.1*(0.5^5)))[1:t-1]
 nsim<-2
@@ -85,7 +84,7 @@ while(i<nsim){
   naive.SigmaPsi <- c(vc1[vc1$grp=="cluster.period",4],vc2[vc2$grp=="cluster.period",4])
   naive.SigmaE <- c(vc1[vc1$grp=="Residual",4],vc2[vc2$grp=="Residual",4])
   
-  naive.SE <- as.numeric(c(sqrt(diag(vcov(lme1))),sqrt(diag(vcov(lme2))))) # add SE for random effects?
+  naive.SE <- as.numeric(c(sqrt(diag(vcov(lme1))),sqrt(diag(vcov(lme2)))))
 
   naive.i<-c(naive.zeta,naive.SigmaPhi,naive.SigmaPsi,naive.SigmaE,naive.SE)
   
@@ -152,4 +151,3 @@ naive.simData <- as.data.frame(naive.simData)
 
 write.table(simData, file=paste("results/UncorrectedResults_",analysis,"_scenario",scenario,".txt",sep=""), sep="\t", row.names=F)
 write.table(naive.simData, file=paste("results/NaiveResults_",analysis,"_scenario",scenario,".txt",sep=""), sep="\t", row.names=F)
-#write.table(simData, file=paste("results/CorrectedResults_",analysis,"_scenario",scenario,".txt",sep=""), sep="\t", row.names=F)
